@@ -10,6 +10,7 @@ from marsad.config import Settings
 from marsad.embed import embed_pending, make_embedder
 from marsad.newsletter.mailer import make_mailer
 from marsad.newsletter.service import deliver_pending, ensure_weekly_draft
+from marsad.trends import ensure_previous_month_draft
 from marsad.fetch.http import PoliteClient
 from marsad.fetch.run import due_sources, fetch_source
 from marsad.models import Stage
@@ -64,6 +65,9 @@ def run_once(factory: sessionmaker[Session], llm: LLM, client: PoliteClient, set
     if embedder is not None:
         with factory() as session:
             counts["embedded"] = embed_pending(session, embedder)
+    with factory() as session:
+        if ensure_previous_month_draft(session, llm, settings):
+            counts["trend_draft"] = 1
     with factory() as session:
         if ensure_weekly_draft(session, settings):
             counts["digest_draft"] = 1

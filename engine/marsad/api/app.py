@@ -5,7 +5,7 @@ import logging
 from fastapi import FastAPI
 from sqlalchemy.orm import sessionmaker
 
-from marsad.api import dossiers_api, editor, newsletter, public
+from marsad.api import dossiers_api, editor, newsletter, public, trends_api
 from marsad.config import Settings, get_settings
 from marsad.db import session_factory
 
@@ -34,6 +34,8 @@ def create_app(settings: Settings | None = None, factory: sessionmaker | None = 
     app.include_router(newsletter.editor)
     app.include_router(dossiers_api.public)
     app.include_router(dossiers_api.editor)
+    app.include_router(trends_api.public)
+    app.include_router(trends_api.editor)
     from marsad.api.v1 import create_v1_app
     app.mount("/v1", create_v1_app(app.state))
     return app

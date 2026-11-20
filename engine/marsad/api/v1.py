@@ -103,6 +103,13 @@ def dossier(slug: str, db: Session = Depends(get_db)):
     return {"data": dossiers_api.get_dossier(slug=slug, db=db)}
 
 
+@router.get("/trends/{month}", summary="Monthly statistics across sources (YYYY-MM), with the published report")
+def trends(month: str, db: Session = Depends(get_db)):
+    from marsad.api import trends_api
+
+    return {"data": trends_api.month_stats(month=month, db=db)}
+
+
 def create_v1_app(parent_state) -> FastAPI:
     app = FastAPI(title="Marsad Public API", version="1.0.0", description=DESCRIPTION,
                   docs_url="/docs", redoc_url=None, openapi_url="/openapi.json")
