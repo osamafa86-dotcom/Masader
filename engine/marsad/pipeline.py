@@ -10,12 +10,12 @@ from marsad.ai.glossary import Term
 from marsad.ai.llm import LLM, LLMRefusal, LLMResult
 from marsad.ai.prompts import PROMPT_VERSION
 from marsad.ai.tasks import DocInput, classify, qa_check, summarize, translate
-from marsad.arabic import normalize_ar
+from marsad.arabic import loose_form, normalize_ar
 from marsad.config import Settings
 from marsad.extract.html import extract_html, paragraphs_from_fragment
 from marsad.extract.pdf import extract_pdf
 from marsad.extract.types import Extracted
-from marsad.fetch.http import PoliteClient
+from marsad.fetch.http import FetchError, PoliteClient
 from marsad.models import (
     AiUsage,
     AuditLog,
@@ -193,7 +193,9 @@ def build_search_text(doc: Document, tr: Translation) -> str:
     if tr.publish_level == PublishLevel.full and tr.paragraphs_ar:
         parts.extend(tr.paragraphs_ar)
     latin = " ".join([doc.title_en, " ".join(doc.authors or []), doc.source.name, " ".join(doc.keywords or [])])
-    return normalize_ar(" ".join(parts)) + " " + latin.lower()
+    arabic = " ".join(parts)
+    # Both the normalised text and its article-stripped form are indexed, so "ردع" finds "الردع".
+    return f"{normalize_ar(arabic)} {loose_form(arabic)} {latin.lower()}"
 
 
 def publish(session: Session, doc: Document, user: User | None) -> None:
@@ -238,7 +240,10 @@ def advance(session: Session, doc: Document, *, llm: LLM, client: PoliteClient, 
     except (LLMRefusal, Insufficient) as exc:
         doc.stage, doc.error = Stage.failed, f"{type(exc).__name__}: {exc}"
     except Exception as exc:  # noqa: BLE001 - one bad document must not stop the worker
-        log.exception("document %s failed at %s", doc.id, doc.stage.value)
+        if isinstance(exc, FetchError):
+            log.warning("document %s: %s", doc.id, exc)
+        else:
+            log.exception("document %s failed at %s", doc.id, doc.stage.value)
         doc.attempts += 1
         doc.error = f"{type(exc).__name__}: {exc}"[:2000]
         if doc.attempts >= MAX_ATTEMPTS:

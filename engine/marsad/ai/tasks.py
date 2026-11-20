@@ -135,6 +135,15 @@ def _translate_ids(llm: LLM, doc: DocInput, ids: list[int], terms: list[Term], c
     return got, notes, res
 
 
+def translate_one(llm: LLM, doc: DocInput, index: int, terms: list[Term], settings: Settings,
+                  context_ar: str = "") -> tuple[str, list[dict], LLMResult]:
+    """Translate a single paragraph, keeping its real id so the model sees its position."""
+    got, notes, res = _translate_ids(llm, doc, [index], terms, context_ar, settings)
+    if index not in got:
+        raise TranslationIncomplete([index])
+    return got[index], notes, res
+
+
 def translate(llm: LLM, doc: DocInput, terms: list[Term], settings: Settings, context_ar: str = "") -> TranslationResult:
     out: dict[int, str] = {}
     notes: list[dict] = []

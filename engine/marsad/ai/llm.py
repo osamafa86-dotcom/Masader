@@ -52,7 +52,13 @@ class AnthropicLLM:
         import anthropic
 
         self._anthropic = anthropic
-        self.client = client or anthropic.Anthropic()
+        self._client = client
+
+    @property
+    def client(self):
+        if self._client is None:  # created on first use, so the API can start without a key
+            self._client = self._anthropic.Anthropic()
+        return self._client
 
     def json(self, *, task, model, system, user, schema, max_tokens=16000, effort=None) -> LLMResult:
         output_config: dict = {"format": {"type": "json_schema", "schema": schema}}
