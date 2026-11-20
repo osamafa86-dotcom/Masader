@@ -50,3 +50,22 @@ def extract_html(html: str, url: str) -> Extracted:
     if paragraphs and title and paragraphs[0] == title:
         paragraphs = paragraphs[1:]
     return Extracted(title=title, paragraphs=paragraphs, authors=authors, published_at=published, abstract=abstract)
+
+
+def find_pdf_link(html: str, base_url: str) -> str | None:
+    """The full report behind a landing page: citation_pdf_url meta tag, else a 'PDF' / 'Download' link to a .pdf."""
+    from urllib.parse import urljoin, urlsplit
+
+    tree = LexborHTMLParser(html)
+    meta = tree.css_first('meta[name="citation_pdf_url"]')
+    if meta is not None and meta.attributes.get("content"):
+        return urljoin(base_url, meta.attributes["content"])
+    host = urlsplit(base_url).netloc
+    for a in tree.css("a[href]"):
+        href = a.attributes.get("href") or ""
+        url = urljoin(base_url, href)
+        label = (a.text(strip=True) + " " + (a.attributes.get("title") or "")).lower()
+        if urlsplit(url).path.lower().endswith(".pdf") and urlsplit(url).netloc == host and (
+                "pdf" in label or "download" in label or "full" in label):
+            return url
+    return None

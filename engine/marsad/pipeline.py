@@ -12,7 +12,7 @@ from marsad.ai.prompts import PROMPT_VERSION
 from marsad.ai.tasks import DocInput, classify, qa_check, summarize, translate, translate_one
 from marsad.arabic import loose_form, normalize_ar
 from marsad.config import Settings
-from marsad.extract.html import extract_html, paragraphs_from_fragment
+from marsad.extract.html import extract_html, find_pdf_link, paragraphs_from_fragment
 from marsad.extract.pdf import extract_pdf
 from marsad.extract.types import Extracted
 from marsad.fetch.http import FetchError, PoliteClient
@@ -74,15 +74,45 @@ def audit(session: Session, action: str, doc: Document, user: User | None = None
 
 
 # ---------------------------------------------------------------- steps
+LANDING_PAGE_WORDS = 400  # an HTML page shorter than this with a PDF link is a report landing page
+MAX_PDF_BYTES = 60 * 1024 * 1024
+
+
+def _is_pdf(res) -> bool:
+    return res.content_type == "application/pdf" or res.content[:5] == b"%PDF-"
+
+
+def _store(storage: LocalStorage, doc: Document, raw: RawItem, url: str, content: bytes, pdf: bool) -> None:
+    key = f"raw/{doc.source.slug}/{url_hash(url)[:16]}.{'pdf' if pdf else 'html'}"
+    raw.raw_key = storage.put(key, content)
+    raw.content_type = "application/pdf" if pdf else "text/html"
+
+
 def _download_and_extract(doc: Document, raw: RawItem, client: PoliteClient, storage: LocalStorage) -> Extracted:
     res = client.get(doc.url)
-    is_pdf = res.content_type == "application/pdf" or res.content[:5] == b"%PDF-"
-    key = f"raw/{doc.source.slug}/{url_hash(doc.url)[:16]}.{'pdf' if is_pdf else 'html'}"
-    raw.raw_key = storage.put(key, res.content)
-    raw.content_type = "application/pdf" if is_pdf else "text/html"
-    if is_pdf:
+    if _is_pdf(res):
+        _store(storage, doc, raw, doc.url, res.content, True)
         return extract_pdf(res.content)
-    return extract_html(res.content.decode("utf-8", "replace"), res.url)
+    html = res.content.decode("utf-8", "replace")
+    _store(storage, doc, raw, doc.url, res.content, False)
+    ex = extract_html(html, res.url)
+    if word_count(ex.paragraphs) < LANDING_PAGE_WORDS:
+        pdf_url = find_pdf_link(html, res.url)
+        if pdf_url:
+            try:
+                pdf = client.get(pdf_url)
+            except FetchError as exc:
+                log.warning("document %s: report PDF not available (%s); using the landing page", doc.id, exc)
+                return ex
+            if _is_pdf(pdf) and len(pdf.content) <= MAX_PDF_BYTES:
+                _store(storage, doc, raw, pdf_url, pdf.content, True)
+                full = extract_pdf(pdf.content)
+                if word_count(full.paragraphs) > word_count(ex.paragraphs):
+                    # Keep the landing page's title, authors and summary; take the body from the PDF.
+                    return Extracted(title=ex.title or full.title, paragraphs=full.paragraphs,
+                                     authors=ex.authors or full.authors, published_at=ex.published_at,
+                                     abstract=ex.abstract or (" ".join(ex.paragraphs) or None))
+    return ex
 
 
 def _extract_feed_only(doc: Document, raw: RawItem) -> None:

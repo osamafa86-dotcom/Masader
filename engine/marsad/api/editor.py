@@ -249,6 +249,58 @@ def retranslate_paragraph(doc_id: int, idx: int, user: User = Depends(current_us
     return {"index": idx, "ar": text, "notes": notes}
 
 
+# ---------------------------------------------------------------- manual import
+class ImportIn(BaseModel):
+    url: str = Field(..., max_length=1000)
+    source_slug: str
+    title: str = Field("", max_length=500)
+
+
+def _safe_url(url: str) -> str:
+    """Editors can import any public page or PDF, but never internal addresses (the worker fetches it)."""
+    import ipaddress
+    from urllib.parse import urlsplit
+
+    parts = urlsplit(url.strip())
+    if parts.scheme not in ("http", "https") or not parts.hostname:
+        raise HTTPException(400, "الرابط يجب أن يبدأ بـ https://")
+    host = parts.hostname.lower()
+    if host == "localhost" or host.endswith((".local", ".internal", ".localhost")):
+        raise HTTPException(400, "لا يمكن استيراد عنوان داخلي")
+    try:
+        ip = ipaddress.ip_address(host)
+    except ValueError:
+        return url.strip()
+    if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
+        raise HTTPException(400, "لا يمكن استيراد عنوان داخلي")
+    return url.strip()
+
+
+@router.post("/import", status_code=201)
+def import_item(body: ImportIn, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    """Queue a single page or PDF (e.g. a Studies in Intelligence article) for the normal pipeline."""
+    from marsad.models import RawItem
+    from marsad.normalize import url_hash
+
+    url = _safe_url(body.url)
+    src = db.scalar(select(Source).where(Source.slug == body.source_slug))
+    if src is None:
+        raise HTTPException(404, "المصدر غير موجود")
+    h = url_hash(url)
+    existing = db.scalar(select(Document).join(RawItem).where(RawItem.url_hash == h))
+    if existing is not None:
+        raise HTTPException(409, f"هذا الرابط مستورد من قبل (المادة {existing.id})")
+    raw = RawItem(source_id=src.id, url=url, url_hash=h, title=body.title.strip())
+    db.add(raw)
+    db.flush()
+    doc = Document(source_id=src.id, raw_item_id=raw.id, url=url, title_en=body.title.strip(), stage=Stage.discovered)
+    db.add(doc)
+    db.flush()
+    _audit(db, user, "import", "document", doc.id, url=url, source=src.slug)
+    db.commit()
+    return {"id": doc.id, "stage": doc.stage.value}
+
+
 # ---------------------------------------------------------------- glossary
 class TermIn(BaseModel):
     term_en: str = Field(..., min_length=1, max_length=200)
