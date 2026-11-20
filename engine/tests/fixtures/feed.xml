@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:dc="http://purl.org/dc/elements/1.1/">
+<channel>
+  <title>Example Review</title>
+  <link>https://example-review.test</link>
+  <description>Fixture feed</description>
+  <item>
+    <title>Deterrence in the Gray Zone: Lessons for Allied Planners</title>
+    <link>https://example-review.test/2026/11/gray-zone-deterrence/</link>
+    <dc:creator>Jane Analyst</dc:creator>
+    <pubDate>Tue, 10 Nov 2026 09:00:00 +0000</pubDate>
+    <description>How allies can adapt deterrence by denial to gray-zone coercion.</description>
+    <content:encoded><![CDATA[<p>Allied planners have spent the past decade debating whether deterrence can work below the threshold of open conflict. The answer offered here is a qualified yes: deterrence by denial can be adapted to gray-zone coercion if planners accept that it will be partial, local and continuous.</p>
+      <p>Gray-zone campaigns are designed to stay ambiguous. An adversary that seizes a reef, harasses fishing fleets or cuts an undersea cable counts on the victim being unable to prove intent or to justify a forceful response. In 2024 alone, coast guards in the region recorded 187 such incidents, more than double the figure for 2019.</p>
+      <p>Traditional deterrence by punishment struggles here because the threatened response is out of proportion to any single provocation. Promising massive retaliation for the loss of a buoy is not credible, and adversaries know it.</p>
+      <p>Deterrence by denial works differently. It aims to make each incremental move fail or cost more than it gains. Persistent surveillance, rapid attribution and pre-positioned response forces reduce the window in which a fait accompli can be achieved.</p>
+      <p>Three lessons stand out. First, presence matters more than firepower: ships and aircraft that are already on station shape behaviour in ways that distant forces cannot. Second, attribution must be fast and public, because ambiguity is the adversary's main asset. Third, allies must agree in advance on thresholds, or the escalation ladder will be climbed one rung at a time without a collective decision.</p>
+      <p>None of this removes the need for conventional strength. A2/AD networks still shape the military balance that sits behind every gray-zone encounter, and the credibility of local denial ultimately rests on the ability to win a wider war.</p>
+      <p>The policy implication is uncomfortable. Effective gray-zone deterrence is expensive, unglamorous and never finished. Budgets that favour exquisite platforms over persistent presence will leave allies well armed for a war that the adversary has no intention of fighting.</p>]]></content:encoded>
+  </item>
+  <item>
+    <title>Short note without full text</title>
+    <link>https://example-review.test/2026/11/short-note</link>
+    <dc:creator>John Writer</dc:creator>
+    <pubDate>Mon, 09 Nov 2026 12:00:00 +0000</pubDate>
+    <description>A teaser only.</description>
+  </item>
+  <item>
+    <title>Naval Logistics After the Pacific Exercises</title>
+    <link>https://example-review.test/2026/11/naval-logistics</link>
+    <dc:creator>Sam Planner</dc:creator>
+    <pubDate>Sun, 08 Nov 2026 08:00:00 +0000</pubDate>
+    <description>Logistics constraints observed during exercises.</description>
+  </item>
+  <item>
+    <title>Deterrence in the Gray Zone: Lessons for Allied Planners</title>
+    <link>http://example-review.test/2026/11/gray-zone-deterrence?utm_source=rss&amp;utm_medium=feed</link>
+    <pubDate>Tue, 10 Nov 2026 09:00:00 +0000</pubDate>
+  </item>
+</channel>
+</rss>
