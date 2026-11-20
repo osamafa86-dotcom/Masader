@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:prism="http://prismstandard.org/namespaces/basic/2.0/">
+<channel>
+  <title>Fixture Journal: Latest Articles</title>
+  <link>https://journal.test/toc/fix20/current</link>
+  <description>Fixture</description>
+  <item>
+    <title>Coalition Intelligence Sharing and the Limits of Trust</title>
+    <link>https://journal.test/doi/full/10.1080/02684527.2026.2401234?af=R</link>
+    <dc:creator>Maria Lopez</dc:creator>
+    <dc:creator>Tom Reed</dc:creator>
+    <pubDate>Mon, 16 Nov 2026 00:00:00 +0000</pubDate>
+    <prism:volume>41</prism:volume>
+    <prism:number>6</prism:number>
+    <prism:startingPage>812</prism:startingPage>
+    <prism:endingPage>835</prism:endingPage>
+    <dc:identifier>doi:10.1080/02684527.2026.2401234</dc:identifier>
+    <description><![CDATA[Volume 41, Issue 6, December 2026, Page 812-835.<br/>Abstract. Intelligence sharing within coalitions is widely assumed to deepen with alliance duration. Drawing on declassified records from three multinational operations between 1991 and 2011, this article argues that sharing is limited less by distrust of partners than by domestic legal restrictions and classification systems. It finds that informal liaison networks repeatedly compensated for formal barriers, and it proposes a typology of four sharing arrangements.]]></description>
+  </item>
+  <item>
+    <title>Correction</title>
+    <link>https://journal.test/doi/full/10.1080/02684527.2026.2409999?af=R</link>
+    <pubDate>Mon, 16 Nov 2026 00:00:00 +0000</pubDate>
+    <prism:volume>41</prism:volume>
+    <prism:number>6</prism:number>
+    <description><![CDATA[Volume 41, Issue 6, December 2026, Page 836-836.]]></description>
+  </item>
+  <item>
+    <title>Strategic Warning in the Age of Commercial Satellites</title>
+    <link>https://journal.test/doi/full/10.1080/02684527.2026.2405555?af=R</link>
+    <dc:creator>Lee Chen</dc:creator>
+    <category>Open Access</category>
+    <pubDate>Tue, 10 Nov 2026 00:00:00 +0000</pubDate>
+    <prism:volume>41</prism:volume>
+    <prism:number>6</prism:number>
+    <prism:startingPage>790</prism:startingPage>
+    <description><![CDATA[Commercial satellite imagery has transformed strategic warning. Using case studies of troop build-ups observed by private firms before 2022, the article shows how open imagery shortened decision timelines for governments and created new pressures on intelligence agencies to declassify their own assessments quickly. It concludes that warning has become a public process.]]></description>
+  </item>
+</channel>
+</rss>

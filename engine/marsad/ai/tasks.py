@@ -81,7 +81,7 @@ def summarize(llm: LLM, doc: DocInput, terms: list[Term], settings: Settings) ->
         count += _words(p)
     text = "\n\n".join(paragraphs)
     payload = {"title": doc.title, "source": doc.source_name, "authors": doc.authors, "abstract": doc.abstract or "",
-               "text": text, "truncated": len(paragraphs) < len(doc.paragraphs),
+               "text": text, "truncated": len(paragraphs) < len(doc.paragraphs), "abstract_only": not doc.paragraphs,
                "glossary": as_prompt(relevant_terms(f"{doc.title}\n{doc.abstract or ''}\n{text}", terms))}
     res = llm.json(task="summarize", model=settings.model_summarize, system=prompts.SUMMARIZE, user=_dump(payload),
                    schema=schemas.SUMMARY, max_tokens=8000, effort=settings.effort_translate)
@@ -89,6 +89,10 @@ def summarize(llm: LLM, doc: DocInput, terms: list[Term], settings: Settings) ->
     d["key_points_ar"] = [p for p in d.get("key_points_ar", []) if p.strip()][:7]
     d["recommendations_ar"] = [p for p in d.get("recommendations_ar", []) if p.strip()][:7]
     d["quotes"] = limit_quotes(d.get("quotes", []), settings.max_quote_words)
+    if not doc.paragraphs:  # abstract-only: at most one quote, and it must come from the abstract itself
+        abstract = (doc.abstract or "").lower()
+        d["quotes"] = [q for q in d["quotes"] if q["en"].lower().strip(" .\"'“”") in abstract][:1]
+        d["abstract_only"] = True
     d["new_terms"] = [t for t in d.get("new_terms", []) if t.get("en") and t.get("ar")][:15]
     return d, res
 

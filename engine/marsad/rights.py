@@ -9,7 +9,13 @@ COPYRIGHT_NOTICE = re.compile(r"(©|\(c\)|copyright)\s*(\d{4})", re.I)
 NON_COMMERCIAL = re.compile(r"\bNC\b|non-?commercial", re.I)
 
 
-def max_publish_level(source: Source, body_text: str, settings: Settings) -> PublishLevel:
+def max_publish_level(source: Source, body_text: str, settings: Settings,
+                      item_license: str | None = None) -> PublishLevel:
+    if item_license:
+        # An item-level open licence (e.g. an open-access journal article) overrides the source level.
+        if settings.site_commercial and NON_COMMERCIAL.search(item_license):
+            return PublishLevel.summary
+        return PublishLevel.full
     if source.rights_level == RightsLevel.c:
         return PublishLevel.summary
     if settings.site_commercial and source.license and NON_COMMERCIAL.search(source.license):
@@ -19,8 +25,10 @@ def max_publish_level(source: Source, body_text: str, settings: Settings) -> Pub
     return PublishLevel.full
 
 
-def rights_note(source: Source, level: PublishLevel) -> str:
+def rights_note(source: Source, level: PublishLevel, item_license: str | None = None) -> str:
     """Attribution line shown with the published item (Arabic)."""
+    if level == PublishLevel.full and item_license:
+        return f"تُنشر هذه الترجمة بموجب ترخيص المادة: {item_license}. الحقوق الأصلية محفوظة لأصحابها."
     if level == PublishLevel.full and source.license:
         return f"تُنشر هذه الترجمة بموجب ترخيص المصدر: {source.license}. الحقوق الأصلية محفوظة لأصحابها."
     if level == PublishLevel.full:

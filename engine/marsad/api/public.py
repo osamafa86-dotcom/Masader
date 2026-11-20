@@ -91,6 +91,39 @@ def get_source(slug: str, db: Session = Depends(get_db)):
             "rights_level": src.rights_level.value, "license": src.license}
 
 
+def _issue_key():
+    return (Document.meta["volume"].astext, Document.meta["issue"].astext)
+
+
+@router.get("/sources/{slug}/issues")
+def list_issues(slug: str, db: Session = Depends(get_db)):
+    """Journal issues that have at least one published item, newest first."""
+    vol, iss = _issue_key()
+    rows = db.execute(
+        select(vol, iss, func.count(), func.max(Document.published_at))
+        .join(Translation).join(Source, Source.id == Document.source_id)
+        .where(Source.slug == slug, Document.stage == Stage.published, vol.is_not(None), iss.is_not(None))
+        .group_by(vol, iss)
+    ).all()
+    def num(v):
+        return int(v) if str(v).isdigit() else 0
+    rows = sorted(rows, key=lambda r: (num(r[0]), num(r[1])), reverse=True)
+    return [{"volume": r[0], "issue": r[1], "count": r[2], "latest": r[3].isoformat() if r[3] else None} for r in rows]
+
+
+@router.get("/sources/{slug}/issues/{volume}/{issue}")
+def get_issue(slug: str, volume: str, issue: str, db: Session = Depends(get_db)):
+    vol, iss = _issue_key()
+    docs = db.scalars(published().join(Source, Source.id == Document.source_id)
+                      .where(Source.slug == slug, vol == volume, iss == issue)).unique().all()
+    if not docs:
+        raise HTTPException(404, "العدد غير موجود")
+    def page(d):
+        p = (d.meta or {}).get("start_page", "")
+        return int(p) if str(p).isdigit() else 10**6
+    return {"volume": volume, "issue": issue, "items": [article_card(d) for d in sorted(docs, key=page)]}
+
+
 @router.get("/topics")
 def list_topics(db: Session = Depends(get_db)):
     counts = dict(db.execute(

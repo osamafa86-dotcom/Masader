@@ -72,6 +72,23 @@ def sources_list():
             typer.echo(f"{src.slug:24} {state} rights={src.rights_level.value} {src.fetch_method:8} {health}")
 
 
+@sources_app.command("set")
+def sources_set(slug: str, active: bool = typer.Option(None, "--active/--inactive"),
+                feed_url: str = typer.Option(None, help="replace the feed or listing URL")):
+    """Activate/deactivate a source or fix its feed URL (rights changes go through the editor dashboard)."""
+    from marsad.models import Source
+
+    with session_scope() as s:
+        src = s.scalar(select(Source).where(Source.slug == slug))
+        if src is None:
+            raise typer.BadParameter(f"unknown source {slug}")
+        if active is not None:
+            src.is_active = active
+        if feed_url:
+            src.feed_url = feed_url
+        typer.echo(f"{src.slug}: active={src.is_active} feed={src.feed_url}")
+
+
 @sources_app.command("check")
 def sources_check(slug: str = typer.Argument(None, help="one source; default: all with a feed URL")):
     """Fetch feeds without saving anything, to verify URLs, robots.txt and full-text availability."""

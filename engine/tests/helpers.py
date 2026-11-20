@@ -22,9 +22,9 @@ def mock_transport(routes: dict[str, tuple[int, bytes | str, dict] | tuple[int, 
 
 
 def make_source(db, slug="example", rights=RightsLevel.a, method="rss", feed_url="https://example-review.test/feed/",
-                **kw) -> Source:
+                kind="media", **kw) -> Source:
     src = Source(slug=slug, name=slug.title(), name_ar="مصدر تجريبي", homepage="https://example-review.test",
-                 kind="media", fetch_method=method, feed_url=feed_url, rights_level=rights, is_active=True, **kw)
+                 kind=kind, fetch_method=method, feed_url=feed_url, rights_level=rights, is_active=True, **kw)
     db.add(src)
     db.commit()
     return src

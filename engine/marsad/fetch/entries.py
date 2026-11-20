@@ -10,3 +10,4 @@ class Entry:
     content_html: str | None = None
     summary: str | None = None
     authors: list[str] = field(default_factory=list)
+    meta: dict = field(default_factory=dict)

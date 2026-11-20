@@ -20,6 +20,16 @@ def effective_level(doc: Document, tr: Translation) -> PublishLevel:
     return PublishLevel.summary
 
 
+META_KEYS = ("journal", "volume", "issue", "start_page", "end_page", "doi", "open_access")
+
+
+def summary_basis(doc: Document, tr: Translation) -> str:
+    """What the Arabic summary rests on: the full text, the published abstract, or the title only."""
+    if (tr.summary or {}).get("toc_only"):
+        return "title"
+    return "full_text" if doc.paragraphs_en else "abstract"
+
+
 def article_card(doc: Document) -> dict:
     tr = doc.translation
     doc_types = _tags(doc, "doc_type")
@@ -40,6 +50,8 @@ def article_card(doc: Document) -> dict:
         "importance": doc.importance,
         "url": doc.url,
         "word_count": doc.word_count,
+        "basis": summary_basis(doc, tr),
+        "meta": {k: (doc.meta or {}).get(k) for k in META_KEYS if (doc.meta or {}).get(k)},
     }
 
 
@@ -64,8 +76,8 @@ def article_detail(doc: Document, glossary: list[GlossaryTerm]) -> dict:
         "summary": {k: s.get(k) for k in ("thesis_ar", "key_points_ar", "evidence_ar", "recommendations_ar",
                                            "significance_ar", "quotes")},
         "body": body,
-        "license": doc.source.license if level == PublishLevel.full else None,
-        "rights_note": rights_note(doc.source, level),
+        "license": (doc.item_license or doc.source.license) if level == PublishLevel.full else None,
+        "rights_note": rights_note(doc.source, level, doc.item_license),
         "glossary": [{"en": t.en, "ar": t.ar, "definition_ar": terms[t.en].definition_ar} for t in used][:30],
         "translation": {"model": tr.model, "prompt_version": tr.prompt_version,
                         "reviewed_at": tr.reviewed_at.isoformat() if tr.reviewed_at else None},
@@ -92,6 +104,10 @@ def editor_item(doc: Document) -> dict:
         "max_level": doc.max_level.value,
         "word_count": doc.word_count,
         "abstract_en": doc.abstract_en,
+        "meta": doc.meta or {},
+        "item_license": doc.item_license,
+        "item_rights_evidence": doc.item_rights_evidence,
+        "content_mode": doc.source.content_mode,
         "paragraphs_en": doc.paragraphs_en or [],
         "topics": _tags(doc, "topic"),
         "regions": _tags(doc, "region"),

@@ -216,6 +216,25 @@ def retry_item(doc_id: int, user: User = Depends(current_user), db: Session = De
     return editor_item(doc)
 
 
+class LicenseIn(BaseModel):
+    license: str = Field(..., min_length=2, max_length=64)
+    evidence: str = Field(..., min_length=5, max_length=2000)
+
+
+@router.post("/items/{doc_id}/license")
+def set_item_license(doc_id: int, body: LicenseIn, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    """Record an item-level open licence (e.g. an open-access article) and reprocess the item with its full text."""
+    doc = _doc(db, doc_id)
+    before = [doc.item_license, doc.item_rights_evidence]
+    doc.item_license, doc.item_rights_evidence = body.license.strip(), body.evidence.strip()
+    if doc.stage == Stage.published:
+        raise HTTPException(409, "أزل المادة من الموقع أولاً ثم سجّل الترخيص لإعادة معالجتها")
+    doc.stage, doc.attempts, doc.error = Stage.discovered, 0, None
+    _audit(db, user, "item_license", "document", doc.id, before=before, after=[doc.item_license, doc.item_rights_evidence])
+    db.commit()
+    return editor_item(doc)
+
+
 @router.post("/items/{doc_id}/paragraphs/{idx}/retranslate")
 def retranslate_paragraph(doc_id: int, idx: int, user: User = Depends(current_user), db: Session = Depends(get_db),
                           llm=Depends(get_llm), settings=Depends(get_settings_dep)):

@@ -103,31 +103,132 @@
   fetch_interval_min: 60
   rights_level: c
   is_active: true
-# ---- Inactive in phase 1 (journals and paywalled sources join in phase 2) ----
+# ---- Phase 2: summary-only think tanks and journals ----
+# content_mode: abstract = summarise the feed abstract only, never download the (paywalled) article.
+# content_mode: toc = translate titles only (tables of contents without abstracts).
 - slug: rusi
   name: Royal United Services Institute
   name_ar: المعهد الملكي للخدمات المتحدة
   homepage: https://www.rusi.org
   kind: think_tank
+  description_ar: أقدم مركز أبحاث دفاعي وأمني في بريطانيا.
   fetch_method: rss
   feed_url: https://www.rusi.org/rss.xml
+  fetch_interval_min: 120
   rights_level: c
+  is_active: true
 - slug: iiss
   name: International Institute for Strategic Studies
   name_ar: المعهد الدولي للدراسات الاستراتيجية
   homepage: https://www.iiss.org
   kind: think_tank
+  description_ar: مركز أبحاث دولي في لندن يصدر «الميزان العسكري» وتحليلات الأمن الدولي.
   fetch_method: rss
   feed_url: https://www.iiss.org/rss
+  fetch_interval_min: 120
   rights_level: c
+  is_active: true
 - slug: swj
   name: Small Wars Journal
   name_ar: مجلة الحروب الصغيرة
   homepage: https://smallwarsjournal.com
   kind: media
+  description_ar: منصة تحليلية في الحروب غير النظامية ومكافحة التمرد والعمليات الخاصة.
   fetch_method: rss
   feed_url: https://smallwarsjournal.com/feed/
+  fetch_interval_min: 120
   rights_level: c
+  is_active: true
+- slug: hdiplo-issf
+  name: H-Diplo / ISSF
+  name_ar: إتش-ديبلو / منتدى الدراسات الأمنية الدولية
+  homepage: https://issforum.org
+  kind: journal
+  description_ar: منتدى أكاديمي ينشر مراجعات الكتب والمقالات في الدراسات الأمنية والتاريخ الدبلوماسي.
+  fetch_method: rss
+  feed_url: https://issforum.org/feed
+  fetch_interval_min: 720
+  rights_level: c
+  is_active: true
+- slug: ins
+  name: Intelligence and National Security
+  name_ar: مجلة الاستخبارات والأمن القومي
+  homepage: https://www.tandfonline.com/journals/fint20
+  kind: journal
+  description_ar: مجلة محكّمة تصدر عن تايلور وفرانسيس في دراسات الاستخبارات وتاريخها.
+  fetch_method: rss
+  feed_url: https://www.tandfonline.com/feed/rss/fint20
+  content_mode: abstract
+  fetch_interval_min: 720
+  rights_level: c
+  rights_evidence: Publisher copyright; hybrid open access (item licence may apply).
+  is_active: true
+- slug: jss
+  name: Journal of Strategic Studies
+  name_ar: مجلة الدراسات الاستراتيجية
+  homepage: https://www.tandfonline.com/journals/fjss20
+  kind: journal
+  description_ar: مجلة محكّمة في الاستراتيجية والتاريخ العسكري والسياسة الدفاعية.
+  fetch_method: rss
+  feed_url: https://www.tandfonline.com/feed/rss/fjss20
+  content_mode: abstract
+  fetch_interval_min: 720
+  rights_level: c
+  rights_evidence: Publisher copyright; hybrid open access (item licence may apply).
+  is_active: true
+- slug: security-studies
+  name: Security Studies
+  name_ar: مجلة الدراسات الأمنية
+  homepage: https://www.tandfonline.com/journals/fsst20
+  kind: journal
+  description_ar: مجلة محكّمة في نظرية العلاقات الدولية والأمن.
+  fetch_method: rss
+  feed_url: https://www.tandfonline.com/feed/rss/fsst20
+  content_mode: abstract
+  fetch_interval_min: 720
+  rights_level: c
+  rights_evidence: Publisher copyright; hybrid open access (item licence may apply).
+  is_active: true
+- slug: isec
+  name: International Security
+  name_ar: مجلة الأمن الدولي
+  homepage: https://direct.mit.edu/isec
+  kind: journal
+  description_ar: مجلة محكّمة تصدر عن مركز بلفر ومطبعة MIT في قضايا الأمن الدولي.
+  fetch_method: rss
+  feed_url: https://direct.mit.edu/rss/site_1000019/1000013.xml
+  content_mode: abstract
+  fetch_interval_min: 720
+  rights_level: c
+  rights_evidence: Publisher copyright; some articles open access (item licence may apply).
+  is_active: true
+- slug: jmh
+  name: Journal of Military History
+  name_ar: مجلة التاريخ العسكري
+  homepage: https://www.smh-hq.org/jmh/
+  kind: journal
+  description_ar: المجلة المحكّمة لجمعية التاريخ العسكري الأمريكية.
+  # Listing selectors not yet verified against the live page: activate after `marsad sources check jmh`.
+  fetch_method: listing
+  feed_url: https://www.smh-hq.org/jmh/
+  listing_config:
+    item_selector: "main, article, .content"
+    link_selector: "a[href]"
+    link_pattern: "/jmh/.*(vol|issue|article)"
+  content_mode: toc
+  fetch_interval_min: 1440
+  rights_level: c
+- slug: studies-in-intelligence
+  name: Studies in Intelligence
+  name_ar: دراسات في الاستخبارات
+  homepage: https://www.cia.gov/resources/csi/studies-in-intelligence/
+  kind: government
+  description_ar: المجلة المهنية لمجتمع الاستخبارات الأمريكي، تُنشر أعدادها غير السرية بصيغة PDF.
+  # No feed: editors add issues with the import form (PDF links).
+  fetch_method: none
+  rights_level: c
+  per_item_copyright_check: true
+  rights_evidence: Government-authored articles are generally public domain; outside contributions are copyrighted.
 - slug: janes
   name: Janes
   name_ar: جينز
@@ -135,59 +236,4 @@
   kind: media
   fetch_method: none
   rights_level: c
-  rights_evidence: Commercial subscription service; headlines and short summaries only.
-- slug: ins
-  name: Intelligence and National Security
-  name_ar: مجلة الاستخبارات والأمن القومي
-  homepage: https://www.tandfonline.com/journals/fint20
-  kind: journal
-  fetch_method: rss
-  feed_url: https://www.tandfonline.com/feed/rss/fint20
-  rights_level: c
-- slug: jss
-  name: Journal of Strategic Studies
-  name_ar: مجلة الدراسات الاستراتيجية
-  homepage: https://www.tandfonline.com/journals/fjss20
-  kind: journal
-  fetch_method: rss
-  feed_url: https://www.tandfonline.com/feed/rss/fjss20
-  rights_level: c
-- slug: security-studies
-  name: Security Studies
-  name_ar: مجلة الدراسات الأمنية
-  homepage: https://www.tandfonline.com/journals/fsst20
-  kind: journal
-  fetch_method: rss
-  feed_url: https://www.tandfonline.com/feed/rss/fsst20
-  rights_level: c
-- slug: isec
-  name: International Security
-  name_ar: مجلة الأمن الدولي
-  homepage: https://direct.mit.edu/isec
-  kind: journal
-  fetch_method: rss
-  rights_level: c
-- slug: studies-in-intelligence
-  name: Studies in Intelligence
-  name_ar: دراسات في الاستخبارات
-  homepage: https://www.cia.gov/resources/csi/studies-in-intelligence/
-  kind: government
-  fetch_method: none
-  rights_level: c
-  per_item_copyright_check: true
-  rights_evidence: Government-authored articles are generally public domain; outside contributions are copyrighted.
-- slug: hdiplo-issf
-  name: H-Diplo / ISSF
-  name_ar: إتش-ديبلو / منتدى الدراسات الأمنية الدولية
-  homepage: https://issforum.org
-  kind: journal
-  fetch_method: rss
-  feed_url: https://issforum.org/feed
-  rights_level: c
-- slug: jmh
-  name: Journal of Military History
-  name_ar: مجلة التاريخ العسكري
-  homepage: https://www.smh-hq.org/jmh/
-  kind: journal
-  fetch_method: none
-  rights_level: c
+  rights_evidence: Commercial subscription service; not monitored automatically.

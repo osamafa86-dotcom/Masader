@@ -50,7 +50,8 @@ def register_entries(session: Session, source: Source, entries: list[Entry]) -> 
         if h in existing:
             continue
         raw = RawItem(source_id=source.id, url=e.url, url_hash=h, title=e.title, published_at=e.published_at,
-                      feed_content=e.content_html, feed_summary=e.summary, feed_authors=e.authors)
+                      feed_content=e.content_html, feed_summary=e.summary, feed_authors=e.authors,
+                      feed_meta=e.meta)
         session.add(raw)
         session.flush()
         session.add(Document(source_id=source.id, raw_item_id=raw.id, url=e.url, title_en=e.title,

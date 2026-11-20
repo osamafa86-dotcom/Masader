@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 import feedparser
 
 from marsad.fetch.entries import Entry
+from marsad.journals import feed_meta
 
 
 def _date(entry) -> datetime | None:
@@ -31,6 +32,7 @@ def parse_feed(content: bytes) -> list[Entry]:
         authors = [a.get("name") for a in e.get("authors", []) if a.get("name")]
         if not authors and e.get("author"):
             authors = [e.author]
+        meta = feed_meta(e, f"{e.get('summary', '')} {content_html or ''}")
         entries.append(Entry(url=link, title=e.get("title", "").strip(), published_at=_date(e),
-                             content_html=content_html, summary=e.get("summary"), authors=authors))
+                             content_html=content_html, summary=e.get("summary"), authors=authors, meta=meta))
     return entries

@@ -9,13 +9,14 @@ from sqlalchemy.orm import Session
 from marsad.ai.glossary import Term
 from marsad.ai.llm import LLM, LLMRefusal, LLMResult
 from marsad.ai.prompts import PROMPT_VERSION
-from marsad.ai.tasks import DocInput, classify, qa_check, summarize, translate
+from marsad.ai.tasks import DocInput, classify, qa_check, summarize, translate, translate_one
 from marsad.arabic import loose_form, normalize_ar
 from marsad.config import Settings
 from marsad.extract.html import extract_html, paragraphs_from_fragment
 from marsad.extract.pdf import extract_pdf
 from marsad.extract.types import Extracted
 from marsad.fetch.http import FetchError, PoliteClient
+from marsad.journals import clean_abstract, has_abstract
 from marsad.models import (
     AiUsage,
     AuditLog,
@@ -84,8 +85,28 @@ def _download_and_extract(doc: Document, raw: RawItem, client: PoliteClient, sto
     return extract_html(res.content.decode("utf-8", "replace"), res.url)
 
 
+def _extract_feed_only(doc: Document, raw: RawItem) -> None:
+    """Journals: the article page is paywalled and never downloaded; work from the feed abstract (or title)."""
+    mode = doc.source.content_mode
+    abstract = clean_abstract(raw.feed_summary or raw.feed_content)
+    if mode == "abstract" and not has_abstract(abstract):
+        raise Insufficient("no abstract in the feed; journal articles are never downloaded, so nothing to summarise")
+    doc.title_en = raw.title
+    doc.authors = list(raw.feed_authors or [])
+    doc.published_at = raw.published_at
+    doc.abstract_en = abstract if has_abstract(abstract) else None
+    doc.paragraphs_en, doc.word_count, doc.content_hash = [], 0, None
+    doc.max_level = PublishLevel.summary
+    doc.stage = Stage.extracted
+
+
 def step_extract(session: Session, doc: Document, client: PoliteClient, storage: LocalStorage, settings: Settings) -> None:
     raw = session.get(RawItem, doc.raw_item_id)
+    doc.meta = {**(raw.feed_meta or {}), **({"journal": doc.source.name} if doc.source.kind == "journal" else {}),
+                **(doc.meta or {})}
+    if doc.source.content_mode in ("abstract", "toc") and not doc.item_license:
+        _extract_feed_only(doc, raw)
+        return
     fragment = paragraphs_from_fragment(raw.feed_content) if raw.feed_content else []
     if word_count(fragment) >= FEED_FULLTEXT_WORDS:
         ex = Extracted(title=raw.title, paragraphs=fragment, authors=list(raw.feed_authors or []))
@@ -109,7 +130,8 @@ def step_extract(session: Session, doc: Document, client: PoliteClient, storage:
     doc.word_count = word_count(paragraphs)
     doc.content_hash = content_hash(paragraphs) if paragraphs else None
     body_text = "\n".join(paragraphs + [abstract or ""])
-    doc.max_level = max_publish_level(doc.source, body_text, settings) if paragraphs else PublishLevel.summary
+    doc.max_level = (max_publish_level(doc.source, body_text, settings, doc.item_license)
+                     if paragraphs else PublishLevel.summary)
 
     if doc.content_hash:
         dup = session.scalar(select(Document.id).where(
@@ -137,8 +159,19 @@ def step_classify(session: Session, doc: Document, llm: LLM, settings: Settings)
     doc.stage = Stage.classified
 
 
+def _toc_summary(llm: LLM, doc: Document, terms: list[Term], settings: Settings) -> tuple[dict, LLMResult]:
+    """Title-only entries (journal tables of contents): translate the title, invent nothing else."""
+    title_ar, _, res = translate_one(llm, DocInput(title=doc.title_en, paragraphs=[doc.title_en]), 0, terms, settings)
+    empty = {"dek_ar": "", "thesis_ar": "", "key_points_ar": [], "evidence_ar": "", "recommendations_ar": [],
+             "significance_ar": "", "quotes": [], "new_terms": []}
+    return {**empty, "title_ar": title_ar, "toc_only": True}, res
+
+
 def step_summarize(session: Session, doc: Document, llm: LLM, terms: list[Term], settings: Settings) -> None:
-    data, res = summarize(llm, doc_input(doc), terms, settings)
+    if not doc.paragraphs_en and not doc.abstract_en:
+        data, res = _toc_summary(llm, doc, terms, settings)
+    else:
+        data, res = summarize(llm, doc_input(doc), terms, settings)
     record_usage(session, doc, "summarize", res)
     tr = doc.translation or Translation(document_id=doc.id)
     doc.translation = tr

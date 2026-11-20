@@ -16,7 +16,7 @@ def _load(name: str):
 SOURCE_FIELDS = (
     "name", "name_ar", "homepage", "kind", "description_ar", "fetch_method", "feed_url",
     "listing_config", "fetch_interval_min", "license", "rights_evidence",
-    "per_item_copyright_check", "is_active",
+    "per_item_copyright_check", "is_active", "content_mode",
 )
 
 
@@ -42,6 +42,8 @@ def seed_sources(session: Session) -> int:
                 value = ""
             if field == "fetch_interval_min" and value is None:
                 value = 60
+            if field == "content_mode" and value is None:
+                value = "full"
             setattr(src, field, value)
         count += 1
     session.flush()
