@@ -18,7 +18,7 @@ from marsad.ai.tasks import (
 )
 from marsad.extract.html import extract_html
 
-DEMO = json.loads(resources.files("marsad.data").joinpath("demo_gray_zone.json").read_text(encoding="utf-8"))
+DEMO = json.loads(resources.files("marsad.data").joinpath("demo_articles.json").read_text(encoding="utf-8"))["articles"][0]
 TERMS = [
     Term("deterrence", "الردع"),
     Term("deterrence by denial", "الردع بالمنع", ("الردع بالحرمان",)),

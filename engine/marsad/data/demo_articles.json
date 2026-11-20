@@ -1,0 +1,240 @@
+{
+ "sources": [
+  {
+   "slug": "demo-open",
+   "name": "Demo Open Review",
+   "name_ar": "مجلة تجريبية مفتوحة (بيانات عرض)",
+   "homepage": "https://example.org/demo",
+   "kind": "journal",
+   "description_ar": "مصدر وهمي لأغراض العرض والاختبار فقط، بترخيص مفتوح افتراضي.",
+   "rights_level": "a",
+   "license": "CC BY 4.0 (demo)"
+  },
+  {
+   "slug": "demo-protected",
+   "name": "Demo Protected Institute",
+   "name_ar": "معهد تجريبي محمي الحقوق (بيانات عرض)",
+   "homepage": "https://example.org/demo",
+   "kind": "think_tank",
+   "description_ar": "مصدر وهمي لأغراض العرض والاختبار فقط، محمي الحقوق فيُنشر ملخصه فقط.",
+   "rights_level": "c",
+   "license": null
+  }
+ ],
+ "articles": [
+  {
+   "slug": "gray-zone-deterrence",
+   "source": "demo-open",
+   "title_en": "Deterrence in the Gray Zone: Lessons for Allied Planners",
+   "url": "https://example.org/demo/gray-zone-deterrence",
+   "authors": [
+    "Jane Analyst"
+   ],
+   "published_at": "2026-11-10T09:00:00+00:00",
+   "paragraphs_en": [
+    "Allied planners have spent the past decade debating whether deterrence can work below the threshold of open conflict. The answer offered here is a qualified yes: deterrence by denial can be adapted to gray-zone coercion if planners accept that it will be partial, local and continuous.",
+    "Gray-zone campaigns are designed to stay ambiguous. An adversary that seizes a reef, harasses fishing fleets or cuts an undersea cable counts on the victim being unable to prove intent or to justify a forceful response. In 2024 alone, coast guards in the region recorded 187 such incidents, more than double the figure for 2019.",
+    "Traditional deterrence by punishment struggles here because the threatened response is out of proportion to any single provocation. Promising massive retaliation for the loss of a buoy is not credible, and adversaries know it.",
+    "Deterrence by denial works differently. It aims to make each incremental move fail or cost more than it gains. Persistent surveillance, rapid attribution and pre-positioned response forces reduce the window in which a fait accompli can be achieved.",
+    "Three lessons stand out. First, presence matters more than firepower: ships and aircraft that are already on station shape behaviour in ways that distant forces cannot. Second, attribution must be fast and public, because ambiguity is the adversary's main asset. Third, allies must agree in advance on thresholds, or the escalation ladder will be climbed one rung at a time without a collective decision.",
+    "None of this removes the need for conventional strength. A2/AD networks still shape the military balance that sits behind every gray-zone encounter, and the credibility of local denial ultimately rests on the ability to win a wider war.",
+    "The policy implication is uncomfortable. Effective gray-zone deterrence is expensive, unglamorous and never finished. Budgets that favour exquisite platforms over persistent presence will leave allies well armed for a war that the adversary has no intention of fighting."
+   ],
+   "classification": {
+    "topics": [
+     "deterrence",
+     "hybrid-gray-zone",
+     "naval"
+    ],
+    "regions": [
+     "indo-pacific"
+    ],
+    "doc_type": "commentary",
+    "importance": 4,
+    "keywords_en": [
+     "gray zone",
+     "deterrence by denial",
+     "attribution",
+     "undersea cables",
+     "A2/AD"
+    ]
+   },
+   "summary": {
+    "title_ar": "الردع في المنطقة الرمادية: دروس للمخطّطين في الدول الحليفة",
+    "dek_ar": "يمكن تكييف الردع بالمنع لمواجهة الإكراه في المنطقة الرمادية إذا قُبل بأنه جزئي ومحلي ومستمر، لكنه مكلف ويتطلب حضوراً عسكرياً دائماً.",
+    "thesis_ar": "يرى الكاتب أن الردع يمكن أن ينجح دون عتبة النزاع المفتوح، شرط أن يتخلى المخطّطون عن منطق الردع بالعقاب الذي يفتقر إلى المصداقية أمام الاستفزازات الصغيرة المتتالية، وأن يعتمدوا الردع بالمنع (deterrence by denial) القائم على إفشال كل خطوة تدريجية يقوم بها الخصم أو رفع كلفتها. ويؤكد أن هذا النوع من الردع سيظل جزئياً ومحلياً ومستمراً، وأن نجاحه يرتبط في النهاية بالتفوق في القوة التقليدية.",
+    "key_points_ar": [
+     "تقوم حملات المنطقة الرمادية على الالتباس، إذ يراهن الخصم على عجز الضحية عن إثبات النية أو تبرير ردّ حازم.",
+     "الردع بالعقاب غير مُقنع في هذا السياق لأن التهديد بانتقام واسع لا يتناسب مع أي استفزاز منفرد.",
+     "الحضور الدائم للسفن والطائرات في مواقعها أهم من القوة النارية البعيدة.",
+     "تحديد المسؤولية بسرعة وعلنية ينزع من الخصم رصيده الأساسي وهو الالتباس.",
+     "على الحلفاء الاتفاق مسبقاً على عتبات الرد، وإلا صعد الخصم سلّم التصعيد درجةً درجة دون قرار جماعي."
+    ],
+    "evidence_ar": "يستند الكاتب إلى بيانات خفر السواحل في المنطقة التي سجّلت 187 حادثة في عام 2024 وحده، أي أكثر من ضعف ما سُجّل في عام 2019، وإلى أمثلة على أنماط الإكراه مثل الاستيلاء على الشعاب وقطع الكابلات البحرية.",
+    "recommendations_ar": [
+     "إعطاء الأولوية للحضور المستمر والمراقبة على حساب المنصات الباهظة.",
+     "بناء قدرة على الإسناد السريع والعلني للمسؤولية عن الحوادث.",
+     "الاتفاق المسبق بين الحلفاء على عتبات الرد وآليات القرار الجماعي."
+    ],
+    "significance_ar": "تقدّم المقالة إطاراً عملياً لتكييف مفهوم الردع مع صراعات ما دون الحرب، وهي مسألة حاضرة في نقاشات أمن الممرات البحرية والبنية التحتية البحرية في مناطق عدة.",
+    "quotes": [
+     {
+      "en": "Effective gray-zone deterrence is expensive, unglamorous and never finished.",
+      "ar": "الردع الفعّال في المنطقة الرمادية مكلف، ويفتقر إلى البريق، ولا ينتهي أبداً."
+     }
+    ],
+    "new_terms": [
+     {
+      "en": "attribution",
+      "ar": "تحديد المسؤولية"
+     },
+     {
+      "en": "fait accompli",
+      "ar": "الأمر الواقع"
+     }
+    ]
+   },
+   "paragraphs_ar": [
+    "أمضى المخطّطون في الدول الحليفة العقد الماضي في الجدل حول ما إذا كان الردع (deterrence) قادراً على النجاح دون عتبة النزاع المفتوح. والإجابة التي تقدّمها هذه المقالة هي «نعم» مشروطة: يمكن تكييف الردع بالمنع (deterrence by denial) لمواجهة الإكراه في المنطقة الرمادية (gray zone) إذا قبل المخطّطون بأنه سيكون جزئياً ومحلياً ومستمراً.",
+    "صُمّمت حملات المنطقة الرمادية لتبقى ملتبسة. فالخصم الذي يستولي على شعاب بحرية، أو يضايق أساطيل الصيد، أو يقطع كابلاً تحت البحر، يراهن على عجز الضحية عن إثبات النية أو تبرير ردّ حازم. وفي عام 2024 وحده سجّلت قوات خفر السواحل في المنطقة 187 حادثة من هذا النوع، أي أكثر من ضعف الرقم المسجّل في عام 2019.",
+    "يواجه الردع بالعقاب (deterrence by punishment) التقليدي صعوبة هنا، لأن الرد الذي يُلوَّح به لا يتناسب مع أي استفزاز منفرد. فالتهديد بانتقام واسع بسبب فقدان عوّامة لا يحظى بالمصداقية، والخصوم يدركون ذلك.",
+    "أما الردع بالمنع فيعمل بطريقة مختلفة؛ إذ يسعى إلى أن تفشل كل خطوة تدريجية أو أن تكلّف أكثر مما تجني. فالمراقبة المستمرة، والتحديد السريع للمسؤولية، وقوات الاستجابة المتمركزة مسبقاً، كلها تقلّص النافذة الزمنية التي يمكن فيها فرض أمر واقع.",
+    "تبرز هنا ثلاثة دروس. أولاً، الحضور أهم من القوة النارية: فالسفن والطائرات الموجودة أصلاً في مواقعها تؤثر في السلوك بطرق لا تقدر عليها القوات البعيدة. ثانياً، يجب أن يكون تحديد المسؤولية سريعاً وعلنياً، لأن الالتباس هو الرصيد الأساسي للخصم. ثالثاً، يجب أن يتفق الحلفاء مسبقاً على العتبات، وإلا فسيُصعَد سلّم التصعيد (escalation ladder) درجةً درجة دون قرار جماعي.",
+    "لا يُغني شيء من ذلك عن الحاجة إلى القوة التقليدية. فشبكات منع الوصول/حرمان المنطقة (A2/AD) لا تزال تشكّل الميزان العسكري الكامن خلف كل مواجهة في المنطقة الرمادية، وتستند مصداقية المنع المحلي في نهاية المطاف إلى القدرة على كسب حرب أوسع.",
+    "والاستنتاج على صعيد السياسات غير مريح: فالردع الفعّال في المنطقة الرمادية مكلف، ويفتقر إلى البريق، ولا ينتهي أبداً. والميزانيات التي تفضّل المنصات الباهظة على الحضور المستمر ستترك الحلفاء مسلّحين جيداً لحرب لا ينوي الخصم خوضها."
+   ]
+  },
+  {
+   "slug": "naval-logistics",
+   "source": "demo-protected",
+   "title_en": "Naval Logistics After the Pacific Exercises",
+   "url": "https://example.org/demo/naval-logistics",
+   "authors": [
+    "Sam Planner"
+   ],
+   "published_at": "2026-11-08T08:00:00+00:00",
+   "paragraphs_en": [
+    "This autumn's multinational exercises in the western Pacific were judged a success by the participating navies. Ships sailed on schedule, live-fire serials were completed and interoperability between allied staffs was better than in previous years.",
+    "Beneath the headlines, however, the exercises exposed a familiar weakness. Fleet oilers and ammunition ships were stretched to their limit, and on several days combatants waited more than 30 hours for fuel because replenishment vessels were committed elsewhere.",
+    "The problem is structural. The number of dedicated logistics ships has fallen by roughly a third since 2005, while the distances that a fleet must cover in a regional contingency have not changed. Commercial tankers can fill part of the gap in peacetime but are unlikely to sail into contested waters.",
+    "Three remedies deserve attention: buying more auxiliary ships of simpler design, pre-positioning fuel and munitions in allied ports, and practising at-sea reloading of vertical launch cells, a capability that most navies still lack.",
+    "Logistics rarely wins budget debates. Yet a fleet that cannot refuel or rearm at sea will not stay in the fight long enough for its combat power to matter."
+   ],
+   "classification": {
+    "topics": [
+     "naval",
+     "defense-policy"
+    ],
+    "regions": [
+     "indo-pacific"
+    ],
+    "doc_type": "commentary",
+    "importance": 3,
+    "keywords_en": [
+     "fleet oilers",
+     "replenishment at sea",
+     "vertical launch system",
+     "pre-positioning"
+    ]
+   },
+   "summary": {
+    "title_ar": "الإمداد البحري بعد مناورات المحيط الهادئ",
+    "dek_ar": "كشفت المناورات متعددة الجنسيات نقصاً بنيوياً في سفن الإمداد قد يُخرج الأساطيل من المعركة مبكراً في أي نزاع إقليمي.",
+    "thesis_ar": "يرى الكاتب أن نجاح المناورات الأخيرة في غرب المحيط الهادئ يخفي ضعفاً مزمناً في الإمداد والتموين البحري، إذ تراجع عدد سفن الإمداد المخصصة بنحو الثلث منذ عام 2005، في حين بقيت المسافات التي يجب أن تقطعها الأساطيل في أي طارئ إقليمي على حالها. ويخلص إلى أن الأسطول العاجز عن التزود بالوقود والذخيرة في البحر لن يبقى في المعركة مدة كافية لتؤثر قوته القتالية.",
+    "key_points_ar": [
+     "انتظرت سفن قتالية أكثر من 30 ساعة للتزود بالوقود في بعض أيام المناورات بسبب انشغال سفن الإمداد.",
+     "انخفض عدد سفن الإمداد المخصصة بنحو الثلث منذ عام 2005.",
+     "قد تسد الناقلات التجارية جزءاً من النقص في وقت السلم، لكنها لن تبحر على الأرجح في المياه المتنازع عليها."
+    ],
+    "evidence_ar": "يعتمد الكاتب على ملاحظات من سير المناورات وعلى مقارنة أعداد سفن الإمداد عبر عقدين.",
+    "recommendations_ar": [
+     "شراء مزيد من السفن المساعدة ذات التصميم الأبسط.",
+     "التخزين المسبق للوقود والذخائر في موانئ الدول الحليفة.",
+     "التدرب على إعادة تلقيم خلايا الإطلاق العمودي في البحر."
+    ],
+    "significance_ar": "تلفت المادة إلى بعد لوجستي كثيراً ما يغيب عن نقاشات توازن القوى البحرية، وهو بعد حاسم في تقدير قدرة الأساطيل على الصمود.",
+    "quotes": [
+     {
+      "en": "a fleet that cannot refuel or rearm at sea will not stay in the fight long enough for its combat power to matter",
+      "ar": "الأسطول العاجز عن التزود بالوقود والذخيرة في البحر لن يبقى في المعركة مدة كافية لتؤثر قوته القتالية"
+     }
+    ],
+    "new_terms": [
+     {
+      "en": "replenishment at sea",
+      "ar": "التزود في عرض البحر"
+     },
+     {
+      "en": "fleet oiler",
+      "ar": "ناقلة وقود الأسطول"
+     }
+    ]
+   }
+  },
+  {
+   "slug": "arctic-competition",
+   "source": "demo-protected",
+   "title_en": "Arctic Competition and the Alliance",
+   "url": "https://example.org/demo/arctic-competition",
+   "authors": [
+    "A. Author",
+    "B. Writer"
+   ],
+   "published_at": "2026-11-05T10:00:00+00:00",
+   "paragraphs_en": [
+    "Strategic competition in the Arctic has intensified since 2022. Melting ice is opening shipping routes for longer periods each year and making seabed resources more accessible, which raises the stakes for every state with a northern coastline.",
+    "Russia has reopened Soviet-era bases along its northern coast, extended the range of its air defences and expanded its fleet of icebreakers, several of them armed. Moscow presents these steps as defensive, but they also give it the ability to control traffic along the Northern Sea Route.",
+    "China, which describes itself as a near-Arctic state, has invested in research stations, polar shipping and scientific cooperation with Russia. Its presence remains modest, yet it is steadily building the expertise needed to operate in polar waters.",
+    "The alliance response remains fragmented. Members prioritise different threats and budgets, and only a few possess ice-capable ships or forces trained for extreme cold. Command arrangements for the High North have been revised twice in five years.",
+    "The report recommends a common Arctic strategy, a shared investment plan for ice-capable platforms and regular cold-weather exercises, warning that without them the region may become a zone of opportunistic pressure rather than cooperation."
+   ],
+   "classification": {
+    "topics": [
+     "great-power",
+     "alliances"
+    ],
+    "regions": [
+     "arctic",
+     "russia-eurasia"
+    ],
+    "doc_type": "report",
+    "importance": 4,
+    "keywords_en": [
+     "Northern Sea Route",
+     "icebreakers",
+     "High North",
+     "near-Arctic state"
+    ]
+   },
+   "summary": {
+    "title_ar": "التنافس في القطب الشمالي والتحالف",
+    "dek_ar": "يتصاعد التنافس الاستراتيجي في القطب الشمالي مع ذوبان الجليد، بينما تبقى استجابة التحالف مجزأة وفق التقرير.",
+    "thesis_ar": "يخلص التقرير إلى أن التنافس الاستراتيجي في القطب الشمالي اشتد منذ عام 2022 بفعل ذوبان الجليد وانفتاح الممرات والموارد، وأن روسيا عززت حضورها العسكري فيما تبني الصين خبرتها تدريجياً، في حين تعاني استجابة التحالف من التشتت واختلاف الأولويات ونقص القدرات المهيأة للعمل في الجليد.",
+    "key_points_ar": [
+     "أعادت روسيا فتح قواعد تعود إلى الحقبة السوفيتية ووسعت أسطول كاسحات الجليد، وبعضها مسلح.",
+     "تصف الصين نفسها بأنها دولة قريبة من القطب الشمالي وتستثمر في محطات البحث والملاحة القطبية.",
+     "قلة من أعضاء التحالف تملك سفناً قادرة على العمل في الجليد أو قوات مدربة على البرد الشديد.",
+     "عُدّلت ترتيبات القيادة الخاصة بأقصى الشمال مرتين خلال خمس سنوات."
+    ],
+    "evidence_ar": "يستند التقرير إلى رصد الانتشار العسكري الروسي وأنشطة الصين القطبية ومراجعة ترتيبات القيادة والقدرات لدى أعضاء التحالف.",
+    "recommendations_ar": [
+     "اعتماد استراتيجية مشتركة للقطب الشمالي.",
+     "وضع خطة استثمار مشتركة في المنصات القادرة على العمل في الجليد.",
+     "تنظيم مناورات دورية في ظروف البرد الشديد."
+    ],
+    "significance_ar": "يقدم التقرير صورة مركزة عن ساحة تنافس ناشئة تتقاطع فيها مصالح روسيا والصين والتحالف الغربي، وتنعكس على طرق التجارة العالمية.",
+    "quotes": [],
+    "new_terms": [
+     {
+      "en": "Northern Sea Route",
+      "ar": "طريق البحر الشمالي"
+     },
+     {
+      "en": "icebreaker",
+      "ar": "كاسحة الجليد"
+     }
+    ]
+   }
+  }
+ ]
+}
