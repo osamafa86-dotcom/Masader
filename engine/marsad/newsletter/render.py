@@ -55,3 +55,14 @@ def digest(settings: Settings, subject: str, intro: str, docs: list[Document], t
     text = (f"{subject}\n\n{intro}\n\n" + "\n\n".join(items_text) +
             f"\n\n---\nاختر موضوعاتك: {manage}\nإلغاء الاشتراك: {unsub}")
     return _wrap(settings, body, footer), text
+
+
+def login_link(settings: Settings, token: str) -> tuple[str, str, str]:
+    link = f"{settings.site_url.rstrip('/')}/account/verify?token={token}"
+    subject = f"رابط الدخول إلى حسابك في {settings.site_name}"
+    body = (f'<p style="font-size:16px;line-height:1.9;">اضغط الزر للدخول إلى حسابك. الرابط صالح لمدة 20 دقيقة ولمرة واحدة.</p>'
+            f'<p><a href="{link}" style="display:inline-block;background:{MAGENTA};color:#fff;padding:10px 22px;'
+            f'border-radius:4px;text-decoration:none;font-weight:bold;">ادخل إلى حسابك</a></p>')
+    footer = "إذا لم تطلب الدخول فتجاهل هذه الرسالة؛ لن يحدث شيء."
+    text = f"للدخول إلى حسابك في {settings.site_name} افتح الرابط (صالح 20 دقيقة ولمرة واحدة):\n{link}"
+    return subject, _wrap(settings, body, footer), text
