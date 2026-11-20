@@ -40,6 +40,16 @@ class Settings(BaseSettings):
     voyage_api_key: str = ""
     semantic_min_similarity: float = 0.35
 
+    # Email (newsletter)
+    mail_backend: str = "auto"  # auto | smtp | fake | none
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_starttls: bool = True
+    smtp_from: str = "مرصد <newsletter@example.org>"
+    mail_batch: int = 50
+
     # Editorial policy
     review_min_importance: int = 3
     auto_publish: bool = False
