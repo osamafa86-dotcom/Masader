@@ -130,3 +130,24 @@ def test_same_article_from_two_sources_is_stored_once(db, session_factory, setti
     docs = db.scalars(select(Document).where(Document.title_en == GRAY).order_by(Document.id)).all()
     assert [d.stage for d in docs][1] == Stage.rejected
     assert "duplicate of document" in docs[1].error
+
+
+def test_glossary_proposals_are_counted_not_duplicated(db, session_factory, settings, world):
+    from marsad.models import GlossaryTerm
+    make_source(db)
+
+    def handler(task, payload):
+        out = demo_handler(task, payload)
+        if task == "summarize":
+            out = {**out, "new_terms": [{"en": "attribution", "ar": "تحديد المسؤولية"},
+                                        {"en": "Attribution", "ar": "الإسناد"},
+                                        {"en": "deterrence", "ar": "الردع"}]}  # already approved: ignored
+        return out
+
+    drain(session_factory, FakeLLM(handler), world, settings)
+    db.expire_all()
+    rows = db.scalars(select(GlossaryTerm).where(GlossaryTerm.status == "proposed")).all()
+    attribution = [r for r in rows if r.term_en.lower() == "attribution"]
+    assert len(attribution) == 1
+    assert attribution[0].proposal_count == 2  # proposed by both summarised items, once each
+    assert attribution[0].example_document_id is not None

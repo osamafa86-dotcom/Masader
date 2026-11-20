@@ -313,12 +313,14 @@ class TermIn(BaseModel):
 
 def _term_json(t: GlossaryTerm) -> dict:
     return {"id": t.id, "term_en": t.term_en, "term_ar": t.term_ar, "variants_ar": t.variants_ar,
-            "definition_ar": t.definition_ar, "domain": t.domain, "status": t.status}
+            "definition_ar": t.definition_ar, "domain": t.domain, "status": t.status,
+            "proposal_count": t.proposal_count, "example_document_id": t.example_document_id}
 
 
 @router.get("/glossary")
 def list_terms(status: str | None = None, user: User = Depends(current_user), db: Session = Depends(get_db)):
-    q = select(GlossaryTerm).order_by(GlossaryTerm.status.desc(), GlossaryTerm.term_en)
+    q = select(GlossaryTerm).order_by(GlossaryTerm.status.desc(), GlossaryTerm.proposal_count.desc(),
+                                      GlossaryTerm.term_en)
     if status:
         q = q.where(GlossaryTerm.status == status)
     return [_term_json(t) for t in db.scalars(q).all()]

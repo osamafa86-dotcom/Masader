@@ -217,12 +217,18 @@ def step_summarize(session: Session, doc: Document, llm: LLM, terms: list[Term],
     tr.publish_level = doc.max_level
     tr.model, tr.prompt_version = res.model, PROMPT_VERSION
     tr.cost_usd = (tr.cost_usd or 0) + res.cost_usd
-    known = {t.en.lower() for t in terms} | set(
-        session.scalars(select(func.lower(GlossaryTerm.term_en))).all())
-    for t in data.get("new_terms", []):
-        if t["en"].lower() not in known:
-            session.add(GlossaryTerm(term_en=t["en"], term_ar=t["ar"], status="proposed", domain="proposed"))
-            known.add(t["en"].lower())
+    approved = {t.en.lower() for t in terms}
+    for t in {x["en"].strip().lower(): x for x in data.get("new_terms", [])}.values():
+        key = t["en"].strip().lower()
+        if key in approved:
+            continue
+        existing = session.scalar(select(GlossaryTerm).where(func.lower(GlossaryTerm.term_en) == key))
+        if existing is None:
+            session.add(GlossaryTerm(term_en=t["en"].strip(), term_ar=t["ar"].strip(), status="proposed",
+                                     domain="proposed", proposal_count=1, example_document_id=doc.id))
+            session.flush()
+        elif existing.status == "proposed":
+            existing.proposal_count += 1  # frequent proposals rise to the top of the editor's list
     doc.stage = Stage.summarized
 
 
