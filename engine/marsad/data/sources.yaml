@@ -1,0 +1,193 @@
+# Source registry. rights_level: a = open licence/public domain/agreement, b = written permission, c = summary + link only.
+# feed_verified: false means the feed URL was not reachable from the build environment and must be confirmed
+# with `marsad sources check` (strategy plan, phase 0).
+- slug: tnsr
+  name: Texas National Security Review
+  name_ar: مجلة تكساس لمراجعة الأمن القومي
+  homepage: https://tnsr.org
+  kind: journal
+  description_ar: مجلة محكّمة مفتوحة الوصول تصدر عن جامعة تكساس، تُعنى بالاستراتيجية والأمن القومي والسياسة الخارجية.
+  fetch_method: rss
+  feed_url: https://tnsr.org/feed/
+  fetch_interval_min: 360
+  rights_level: a
+  license: CC BY-NC 4.0
+  rights_evidence: https://tnsr.org/copyright/
+  is_active: true
+- slug: parameters
+  name: Parameters (US Army War College)
+  name_ar: مجلة بارامترز (كلية الحرب للجيش الأمريكي)
+  homepage: https://press.armywarcollege.edu/parameters/
+  kind: journal
+  description_ar: المجلة الفصلية لكلية الحرب التابعة للجيش الأمريكي في الاستراتيجية والقيادة العسكرية.
+  fetch_method: rss
+  feed_url: https://press.armywarcollege.edu/parameters/recent.rss
+  fetch_interval_min: 720
+  rights_level: a
+  license: Public domain (17 U.S.C. 105)
+  rights_evidence: https://press.armywarcollege.edu/parameters/publication_ethics.html
+  per_item_copyright_check: true
+  is_active: true
+- slug: mwi
+  name: Modern War Institute at West Point
+  name_ar: معهد الحرب الحديثة في ويست بوينت
+  homepage: https://mwi.westpoint.edu
+  kind: think_tank
+  description_ar: معهد بحثي تابع للأكاديمية العسكرية الأمريكية يدرس الحرب المعاصرة والعمليات البرية.
+  fetch_method: rss
+  feed_url: https://mwi.westpoint.edu/feed/
+  fetch_interval_min: 120
+  rights_level: c
+  rights_evidence: Permission requested; many authors are not government employees.
+  per_item_copyright_check: true
+  is_active: true
+- slug: wotr
+  name: War on the Rocks
+  name_ar: وور أون ذا روكس
+  homepage: https://warontherocks.com
+  kind: media
+  description_ar: منصة تحليلية في الاستراتيجية والدفاع والشؤون الخارجية يكتب فيها باحثون وممارسون.
+  fetch_method: rss
+  feed_url: https://warontherocks.com/feed/
+  fetch_interval_min: 60
+  rights_level: c
+  rights_evidence: https://warontherocks.com/terms-use-privacy-policies/
+  is_active: true
+- slug: csis
+  name: Center for Strategic and International Studies
+  name_ar: مركز الدراسات الاستراتيجية والدولية
+  homepage: https://www.csis.org
+  kind: think_tank
+  description_ar: مركز أبحاث أمريكي في واشنطن يغطي الأمن الدولي والاقتصاد والتكنولوجيا والمناطق.
+  fetch_method: rss
+  feed_url: https://www.csis.org/analysis/feed
+  fetch_interval_min: 60
+  rights_level: c
+  rights_evidence: https://www.csis.org/about/media/reprint-permissions
+  is_active: true
+- slug: rand
+  name: RAND Corporation
+  name_ar: مؤسسة راند
+  homepage: https://www.rand.org
+  kind: think_tank
+  description_ar: مؤسسة بحثية أمريكية غير ربحية تنشر تقارير ودراسات في الأمن والدفاع والسياسات العامة.
+  fetch_method: rss
+  feed_url: https://www.rand.org/pubs.xml
+  fetch_interval_min: 180
+  rights_level: c
+  rights_evidence: https://www.rand.org/about/publishing/permissions.html (some items CC BY 4.0)
+  is_active: true
+- slug: lawfare
+  name: Lawfare
+  name_ar: لوفير
+  homepage: https://www.lawfaremedia.org
+  kind: media
+  description_ar: منصة تحليلية في تقاطع القانون والأمن القومي.
+  fetch_method: rss
+  feed_url: https://www.lawfaremedia.org/feeds/articles
+  fetch_interval_min: 60
+  rights_level: c
+  is_active: true
+- slug: isw
+  name: Institute for the Study of War
+  name_ar: معهد دراسة الحرب
+  homepage: https://www.understandingwar.org
+  kind: think_tank
+  description_ar: مركز أبحاث أمريكي ينشر تقييمات يومية للعمليات العسكرية والنزاعات الجارية.
+  fetch_method: listing
+  feed_url: https://www.understandingwar.org/research/
+  listing_config:
+    item_selector: "article, .views-row, .research-item"
+    link_selector: "a[href]"
+    link_pattern: "/(research|backgrounder)/"
+  fetch_interval_min: 60
+  rights_level: c
+  is_active: true
+# ---- Inactive in phase 1 (journals and paywalled sources join in phase 2) ----
+- slug: rusi
+  name: Royal United Services Institute
+  name_ar: المعهد الملكي للخدمات المتحدة
+  homepage: https://www.rusi.org
+  kind: think_tank
+  fetch_method: rss
+  feed_url: https://www.rusi.org/rss.xml
+  rights_level: c
+- slug: iiss
+  name: International Institute for Strategic Studies
+  name_ar: المعهد الدولي للدراسات الاستراتيجية
+  homepage: https://www.iiss.org
+  kind: think_tank
+  fetch_method: rss
+  feed_url: https://www.iiss.org/rss
+  rights_level: c
+- slug: swj
+  name: Small Wars Journal
+  name_ar: مجلة الحروب الصغيرة
+  homepage: https://smallwarsjournal.com
+  kind: media
+  fetch_method: rss
+  feed_url: https://smallwarsjournal.com/feed/
+  rights_level: c
+- slug: janes
+  name: Janes
+  name_ar: جينز
+  homepage: https://www.janes.com
+  kind: media
+  fetch_method: none
+  rights_level: c
+  rights_evidence: Commercial subscription service; headlines and short summaries only.
+- slug: ins
+  name: Intelligence and National Security
+  name_ar: مجلة الاستخبارات والأمن القومي
+  homepage: https://www.tandfonline.com/journals/fint20
+  kind: journal
+  fetch_method: rss
+  feed_url: https://www.tandfonline.com/feed/rss/fint20
+  rights_level: c
+- slug: jss
+  name: Journal of Strategic Studies
+  name_ar: مجلة الدراسات الاستراتيجية
+  homepage: https://www.tandfonline.com/journals/fjss20
+  kind: journal
+  fetch_method: rss
+  feed_url: https://www.tandfonline.com/feed/rss/fjss20
+  rights_level: c
+- slug: security-studies
+  name: Security Studies
+  name_ar: مجلة الدراسات الأمنية
+  homepage: https://www.tandfonline.com/journals/fsst20
+  kind: journal
+  fetch_method: rss
+  feed_url: https://www.tandfonline.com/feed/rss/fsst20
+  rights_level: c
+- slug: isec
+  name: International Security
+  name_ar: مجلة الأمن الدولي
+  homepage: https://direct.mit.edu/isec
+  kind: journal
+  fetch_method: rss
+  rights_level: c
+- slug: studies-in-intelligence
+  name: Studies in Intelligence
+  name_ar: دراسات في الاستخبارات
+  homepage: https://www.cia.gov/resources/csi/studies-in-intelligence/
+  kind: government
+  fetch_method: none
+  rights_level: c
+  per_item_copyright_check: true
+  rights_evidence: Government-authored articles are generally public domain; outside contributions are copyrighted.
+- slug: hdiplo-issf
+  name: H-Diplo / ISSF
+  name_ar: إتش-ديبلو / منتدى الدراسات الأمنية الدولية
+  homepage: https://issforum.org
+  kind: journal
+  fetch_method: rss
+  feed_url: https://issforum.org/feed
+  rights_level: c
+- slug: jmh
+  name: Journal of Military History
+  name_ar: مجلة التاريخ العسكري
+  homepage: https://www.smh-hq.org/jmh/
+  kind: journal
+  fetch_method: none
+  rights_level: c
