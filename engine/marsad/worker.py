@@ -14,7 +14,7 @@ from marsad.trends import ensure_previous_month_draft
 from marsad.fetch.http import PoliteClient
 from marsad.fetch.run import due_sources, fetch_source
 from marsad.models import Stage
-from marsad.pipeline import AI_STAGES, advance, claim_next, load_terms, spent_today
+from marsad.pipeline import AI_STAGES, advance, claim_next, spent_today
 from marsad.storage import LocalStorage
 
 log = logging.getLogger(__name__)
@@ -43,7 +43,7 @@ def _drain(factory: sessionmaker[Session], stages: tuple[Stage, ...], limit: int
                 return done
             seen.add(doc.id)
             before = doc.stage
-            after = advance(session, doc, settings=settings, terms=load_terms(session), **deps)
+            after = advance(session, doc, settings=settings, **deps)  # glossary loaded per document language
             session.commit()
             log.info("document %s: %s -> %s", doc.id, before.value, after.value)
             done += 1

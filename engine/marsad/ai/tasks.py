@@ -9,6 +9,7 @@ from marsad.ai.glossary import Term, as_prompt, relevant_terms
 from marsad.ai.llm import LLM, LLMResult
 from marsad.arabic import loose_form, normalize_ar
 from marsad.config import Settings
+from marsad.lang import script_of
 
 
 @dataclass
@@ -18,6 +19,7 @@ class DocInput:
     source_name: str = ""
     authors: list[str] = field(default_factory=list)
     abstract: str | None = None
+    language: str = "en"
 
 
 class TranslationIncomplete(Exception):
@@ -42,7 +44,7 @@ def classify(llm: LLM, doc: DocInput, settings: Settings) -> tuple[dict, LLMResu
         count += _words(p)
         if count > 1500:
             break
-    payload = {"title": doc.title, "source": doc.source_name, "abstract": doc.abstract or "",
+    payload = {"title": doc.title, "source": doc.source_name, "abstract": doc.abstract or "", "source_language": doc.language,
                "opening_text": "\n\n".join(opening), "total_words": sum(_words(p) for p in doc.paragraphs)}
     res = llm.json(task="classify", model=settings.model_classify, system=prompts.CLASSIFY, user=_dump(payload),
                    schema=schemas.CLASSIFICATION, max_tokens=2000, effort=settings.effort_classify)
@@ -82,6 +84,7 @@ def summarize(llm: LLM, doc: DocInput, terms: list[Term], settings: Settings) ->
     text = "\n\n".join(paragraphs)
     payload = {"title": doc.title, "source": doc.source_name, "authors": doc.authors, "abstract": doc.abstract or "",
                "text": text, "truncated": len(paragraphs) < len(doc.paragraphs), "abstract_only": not doc.paragraphs,
+               "source_language": doc.language,
                "glossary": as_prompt(relevant_terms(f"{doc.title}\n{doc.abstract or ''}\n{text}", terms))}
     res = llm.json(task="summarize", model=settings.model_summarize, system=prompts.SUMMARIZE, user=_dump(payload),
                    schema=schemas.SUMMARY, max_tokens=8000, effort=settings.effort_translate)
@@ -125,7 +128,7 @@ def chunk_ids(paragraphs: list[str], max_words: int) -> list[list[int]]:
 def _translate_ids(llm: LLM, doc: DocInput, ids: list[int], terms: list[Term], context_ar: str,
                    settings: Settings) -> tuple[dict[int, str], list[dict], LLMResult]:
     chunk_text = "\n".join(doc.paragraphs[i] for i in ids)
-    payload = {"title": doc.title, "context_summary_ar": context_ar,
+    payload = {"title": doc.title, "context_summary_ar": context_ar, "source_language": doc.language,
                "glossary": as_prompt(relevant_terms(f"{doc.title}\n{chunk_text}", terms)),
                "paragraphs": [{"id": i, "en": doc.paragraphs[i]} for i in ids]}
     words = sum(_words(doc.paragraphs[i]) for i in ids)
@@ -185,8 +188,9 @@ def _has_term(ar_text: str, term: Term) -> bool:
     return any(loose_form(form) in haystack for form in (term.ar, *term.variants) if form)
 
 
-def deterministic_issues(en: list[str], ar: list[str | None], terms: list[Term]) -> list[dict]:
+def deterministic_issues(en: list[str], ar: list[str | None], terms: list[Term], lang: str = "en") -> list[dict]:
     issues: list[dict] = []
+    source_script = script_of(lang)
     if len(en) != len(ar):
         issues.append({"paragraph_id": -1, "kind": "omission", "severity": "high",
                        "detail_ar": f"عدد الفقرات المترجمة ({len(ar)}) لا يطابق الأصل ({len(en)})."})
@@ -195,10 +199,11 @@ def deterministic_issues(en: list[str], ar: list[str | None], terms: list[Term])
         if not tgt or not tgt.strip():
             issues.append({"paragraph_id": i, "kind": "omission", "severity": "high", "detail_ar": "الفقرة غير مترجمة."})
             continue
-        letters = len(LATIN.findall(tgt)) + len(ARABIC.findall(tgt))
-        if letters and len(LATIN.findall(tgt)) / letters > 0.4:
+        leftover = len(source_script.findall(tgt))
+        letters = leftover + len(ARABIC.findall(tgt))
+        if letters and leftover / letters > 0.4:
             issues.append({"paragraph_id": i, "kind": "omission", "severity": "high",
-                           "detail_ar": "نسبة كبيرة من الفقرة بقيت بالإنجليزية."})
+                           "detail_ar": "نسبة كبيرة من الفقرة بقيت بلغة الأصل."})
         missing_numbers = _numbers(src) - _numbers(normalize_ar(tgt))
         if missing_numbers:
             issues.append({"paragraph_id": i, "kind": "number", "severity": "medium",
@@ -207,7 +212,7 @@ def deterministic_issues(en: list[str], ar: list[str | None], terms: list[Term])
             if not _has_term(tgt, term):
                 issues.append({"paragraph_id": i, "kind": "terminology", "severity": "medium",
                                "detail_ar": f"المصطلح «{term.en}» لم يُترجم بالصيغة المعتمدة «{term.ar}»."})
-        if len(src.split()) >= 25:
+        if len(src.split()) >= 25 and lang != "zh":  # character ratios are meaningless for Chinese
             ratio = len(tgt) / max(1, len(src))
             if ratio < 0.45 or ratio > 1.8:
                 issues.append({"paragraph_id": i, "kind": "omission" if ratio < 0.45 else "addition",
@@ -227,8 +232,8 @@ def _dedupe_terms(issues: list[dict]) -> list[dict]:
 
 
 def qa_check(en: list[str], ar: list[str | None], terms: list[Term], settings: Settings,
-             llm: LLM | None = None) -> tuple[dict, LLMResult | None]:
-    issues = _dedupe_terms(deterministic_issues(en, ar, terms))
+             llm: LLM | None = None, lang: str = "en") -> tuple[dict, LLMResult | None]:
+    issues = _dedupe_terms(deterministic_issues(en, ar, terms, lang))
     judge_res = None
     if llm is not None and settings.qa_llm_judge:
         payload = {"glossary": as_prompt(relevant_terms("\n".join(en), terms)),

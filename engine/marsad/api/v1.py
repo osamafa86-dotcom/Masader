@@ -62,7 +62,8 @@ def article(doc_id: int, db: Session = Depends(get_db), settings=Depends(get_set
     doc = db.scalar(public.published().where(Document.id == doc_id))
     if doc is None:
         raise HTTPException(404, "not found")
-    glossary = db.scalars(select(GlossaryTerm).where(GlossaryTerm.status == "approved")).all()
+    glossary = db.scalars(select(GlossaryTerm).where(GlossaryTerm.status == "approved",
+                                                     GlossaryTerm.lang == (doc.language or "en"))).all()
     return {"data": article_detail(doc, glossary, settings.site_name, settings.site_url)}
 
 
@@ -85,8 +86,9 @@ def topics(db: Session = Depends(get_db)):
 
 
 @router.get("/glossary", summary="Approved Arabic terminology")
-def glossary(q: str | None = Query(None, max_length=100), db: Session = Depends(get_db)):
-    return {"data": public.glossary(q=q, db=db)}
+def glossary(q: str | None = Query(None, max_length=100), lang: str | None = Query(None, pattern="^[a-z]{2}$"),
+             db: Session = Depends(get_db)):
+    return {"data": public.glossary(q=q, lang=lang, db=db)}
 
 
 @router.get("/dossiers", summary="Published thematic dossiers")

@@ -53,6 +53,7 @@ def article_card(doc: Document) -> dict:
         "url": doc.url,
         "word_count": doc.word_count,
         "basis": summary_basis(doc, tr),
+        "source_language": doc.language or "en",
         "meta": {k: (doc.meta or {}).get(k) for k in META_KEYS if (doc.meta or {}).get(k)},
     }
 
@@ -112,6 +113,7 @@ def editor_item(doc: Document) -> dict:
         "item_license": doc.item_license,
         "item_rights_evidence": doc.item_rights_evidence,
         "content_mode": doc.source.content_mode,
+        "source_language": doc.language or "en",
         "paragraphs_en": doc.paragraphs_en or [],
         "topics": _tags(doc, "topic"),
         "regions": _tags(doc, "region"),

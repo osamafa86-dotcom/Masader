@@ -11,7 +11,7 @@ from marsad.config import Settings
 from marsad.models import Document, PublishLevel, RawItem, RightsLevel, Source, Stage
 from marsad.normalize import content_hash, url_hash, word_count
 from marsad.authors import link_authors
-from marsad.pipeline import advance, load_terms, publish
+from marsad.pipeline import advance, publish
 from marsad.rights import max_publish_level
 
 
@@ -25,6 +25,7 @@ def load_demo(session: Session, settings: Settings, publish_items: bool = True) 
         for key in ("name", "name_ar", "homepage", "kind", "description_ar", "license"):
             setattr(src, key, row[key])
         src.content_mode = row.get("content_mode", "full")
+        src.language = row.get("language", "en")
         src.rights_level = RightsLevel(row["rights_level"])
         sources[row["slug"]] = src
     session.flush()
@@ -52,9 +53,9 @@ def load_demo(session: Session, settings: Settings, publish_items: bool = True) 
         session.add(doc)
         session.flush()
         link_authors(session, doc)
-        terms = load_terms(session)
+        doc.language = art.get("language", "en")
         for _ in range(3):
-            advance(session, doc, llm=llm, client=None, storage=None, settings=settings, terms=terms)
+            advance(session, doc, llm=llm, client=None, storage=None, settings=settings)
         if publish_items and doc.stage == Stage.review:
             publish(session, doc, user=None)
         ids.append(doc.id)

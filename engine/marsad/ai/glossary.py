@@ -11,9 +11,16 @@ class Term:
     variants: tuple[str, ...] = ()
 
 
+CJK = re.compile(r"[\u4E00-\u9FFF]")
+LATIN = re.compile(r"[A-Za-z]")
+
+
 def _pattern(term: str) -> re.Pattern:
+    if CJK.search(term):  # no spaces between words in Chinese: plain substring
+        return re.compile(re.escape(term))
     flags = 0 if term.isupper() else re.IGNORECASE
-    return re.compile(rf"(?<![\w-]){re.escape(term)}(?:s|es)?(?![\w-])", flags)
+    plural = "(?:s|es)?" if LATIN.search(term) else ""
+    return re.compile(rf"(?<![\w-]){re.escape(term)}{plural}(?![\w-])", flags)
 
 
 _cache: dict[str, re.Pattern] = {}

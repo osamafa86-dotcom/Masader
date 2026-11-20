@@ -57,9 +57,9 @@ def api_with(session_factory, settings, embedder):
 
 def test_embed_pending_is_incremental(demo):
     emb = FakeEmbedder()
-    assert embed_pending(demo, emb) == 5
+    assert embed_pending(demo, emb) == 6
     assert embed_pending(demo, emb) == 0
-    assert demo.scalar(select(func.count()).select_from(DocEmbedding)) == 5
+    assert demo.scalar(select(func.count()).select_from(DocEmbedding)) == 6
     assert embed_pending(demo, BrokenEmbedder()) == 0  # model changed but provider down: nothing breaks
 
 
@@ -68,7 +68,9 @@ def test_related_falls_back_to_tags_without_vectors(demo, session_factory, setti
     gray = demo.scalar(select(Document).where(Document.title_en == GRAY))
     r = api.get(f"/api/articles/{gray.id}/related").json()
     assert r["basis"] == "tags"
-    assert [a["title_en"] for a in r["items"]] == ["Naval Logistics After the Pacific Exercises"]  # shares indo-pacific
+    titles = [a["title_en"] for a in r["items"]]
+    assert titles[0] == "Naval Logistics After the Pacific Exercises"  # shares two tags: naval, indo-pacific
+    assert "La dissuasion française à l'épreuve de la haute intensité" in titles  # shares one: deterrence
 
 
 def test_related_and_semantic_search_with_vectors(demo, session_factory, settings):
@@ -86,6 +88,6 @@ def test_related_and_semantic_search_with_vectors(demo, session_factory, setting
 def test_search_survives_embedding_outage(demo, session_factory, settings):
     api = api_with(session_factory, settings, BrokenEmbedder())
     res = api.get("/api/search", params={"q": "ردع", "mode": "semantic"}).json()
-    assert res["mode"] == "keyword" and res["total"] == 1
+    assert res["mode"] == "keyword" and res["total"] == 2
     res = api.get("/api/search", params={"q": "ردع", "mode": "semantic"})
     assert res.status_code == 200

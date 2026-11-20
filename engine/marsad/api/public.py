@@ -73,7 +73,8 @@ def get_article(doc_id: int, db: Session = Depends(get_db), settings=Depends(get
     doc = db.scalar(published().where(Document.id == doc_id))
     if doc is None:
         raise HTTPException(404, "المادة غير موجودة")
-    glossary = db.scalars(select(GlossaryTerm).where(GlossaryTerm.status == "approved")).all()
+    glossary = db.scalars(select(GlossaryTerm).where(GlossaryTerm.status == "approved",
+                                                     GlossaryTerm.lang == (doc.language or "en"))).all()
     return article_detail(doc, glossary, settings.site_name, settings.site_url)
 
 
@@ -235,14 +236,18 @@ def related(doc_id: int, limit: int = Query(5, ge=1, le=12), db: Session = Depen
 
 
 @router.get("/glossary")
-def glossary(q: str | None = Query(None, max_length=100), db: Session = Depends(get_db)):
-    rows = db.scalars(select(GlossaryTerm).where(GlossaryTerm.status == "approved").order_by(GlossaryTerm.term_en)).all()
+def glossary(q: str | None = Query(None, max_length=100), lang: str | None = Query(None, pattern="^[a-z]{2}$"),
+             db: Session = Depends(get_db)):
+    query = select(GlossaryTerm).where(GlossaryTerm.status == "approved").order_by(GlossaryTerm.lang, GlossaryTerm.term_en)
+    if lang:
+        query = query.where(GlossaryTerm.lang == lang)
+    rows = db.scalars(query).all()
     if q:
         needle_en, needle_ar = q.lower().strip(), normalize_ar(q)
         rows = [r for r in rows if needle_en in r.term_en.lower() or needle_ar in normalize_ar(r.term_ar)
                 or any(needle_ar in normalize_ar(v) for v in r.variants_ar or [])]
-    return [{"en": r.term_en, "ar": r.term_ar, "variants_ar": r.variants_ar, "definition_ar": r.definition_ar,
-             "domain": r.domain} for r in rows]
+    return [{"en": r.term_en, "lang": r.lang, "ar": r.term_ar, "variants_ar": r.variants_ar,
+             "definition_ar": r.definition_ar, "domain": r.domain} for r in rows]
 
 
 class FeedbackIn(BaseModel):

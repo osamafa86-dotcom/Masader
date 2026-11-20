@@ -76,12 +76,14 @@ def compute(session: Session, month: str) -> dict:
 
     topics = rows("topic")
     movers = [r for r in topics if max(r["count"], r["previous"]) >= 2]
-    rising = sorted((r for r in movers if r["count"] - r["avg_3m"] > 0), key=lambda r: -(r["count"] - r["avg_3m"]))[:5]
-    falling = sorted((r for r in movers if r["count"] - r["avg_3m"] < 0), key=lambda r: r["count"] - r["avg_3m"])[:5]
+    rising = sorted((r for r in movers if r["count"] - r["avg_3m"] > 0),
+                    key=lambda r: (-(r["count"] - r["avg_3m"]), -r["count"], r["slug"]))[:5]
+    falling = sorted((r for r in movers if r["count"] - r["avg_3m"] < 0),
+                     key=lambda r: (r["count"] - r["avg_3m"], r["slug"]))[:5]
     keywords = [{"keyword": k, "count": c, "previous": prev_c["keyword"][k]}
                 for k, c in now_c["keyword"].most_common(40) if c >= 2]
     rising_keywords = sorted((k for k in keywords if k["count"] > k["previous"]),
-                             key=lambda k: -(k["count"] - k["previous"]))[:10]
+                             key=lambda k: (-(k["count"] - k["previous"]), k["keyword"]))[:10]
 
     start, _ = month_bounds(month)
     weeks = Counter(min(4, (d.published_at.day - 1) // 7) for d in docs)

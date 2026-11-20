@@ -18,6 +18,7 @@ from marsad.extract.types import Extracted
 from marsad.fetch.http import FetchError, PoliteClient
 from marsad.authors import link_authors
 from marsad.journals import clean_abstract, has_abstract
+from marsad.lang import detect
 from marsad.models import (
     AiUsage,
     AuditLog,
@@ -49,8 +50,8 @@ class Insufficient(Exception):
 
 
 # ---------------------------------------------------------------- helpers
-def load_terms(session: Session) -> list[Term]:
-    rows = session.scalars(select(GlossaryTerm).where(GlossaryTerm.status == "approved")).all()
+def load_terms(session: Session, lang: str = "en") -> list[Term]:
+    rows = session.scalars(select(GlossaryTerm).where(GlossaryTerm.status == "approved", GlossaryTerm.lang == lang)).all()
     return [Term(r.term_en, r.term_ar, tuple(r.variants_ar or ())) for r in rows]
 
 
@@ -66,7 +67,7 @@ def spent_today(session: Session) -> float:
 
 def doc_input(doc: Document) -> DocInput:
     return DocInput(title=doc.title_en, paragraphs=list(doc.paragraphs_en or []), source_name=doc.source.name,
-                    authors=list(doc.authors or []), abstract=doc.abstract_en)
+                    authors=list(doc.authors or []), abstract=doc.abstract_en, language=doc.language or "en")
 
 
 def audit(session: Session, action: str, doc: Document, user: User | None = None, **detail) -> None:
@@ -133,6 +134,8 @@ def _extract_feed_only(doc: Document, raw: RawItem) -> None:
 
 def _finish_extract(session: Session, doc: Document) -> None:
     link_authors(session, doc)
+    text = " ".join([doc.title_en or "", doc.abstract_en or ""] + list(doc.paragraphs_en or [])[:20])
+    doc.language = detect(text, default=doc.source.language or "en")
 
 
 def step_extract(session: Session, doc: Document, client: PoliteClient, storage: LocalStorage, settings: Settings) -> None:
@@ -218,13 +221,15 @@ def step_summarize(session: Session, doc: Document, llm: LLM, terms: list[Term],
     tr.model, tr.prompt_version = res.model, PROMPT_VERSION
     tr.cost_usd = (tr.cost_usd or 0) + res.cost_usd
     approved = {t.en.lower() for t in terms}
+    lang = doc.language or "en"
     for t in {x["en"].strip().lower(): x for x in data.get("new_terms", [])}.values():
         key = t["en"].strip().lower()
         if key in approved:
             continue
-        existing = session.scalar(select(GlossaryTerm).where(func.lower(GlossaryTerm.term_en) == key))
+        existing = session.scalar(select(GlossaryTerm).where(GlossaryTerm.lang == lang,
+                                                             func.lower(GlossaryTerm.term_en) == key))
         if existing is None:
-            session.add(GlossaryTerm(term_en=t["en"].strip(), term_ar=t["ar"].strip(), status="proposed",
+            session.add(GlossaryTerm(lang=lang, term_en=t["en"].strip(), term_ar=t["ar"].strip(), status="proposed",
                                      domain="proposed", proposal_count=1, example_document_id=doc.id))
             session.flush()
         elif existing.status == "proposed":
@@ -242,13 +247,17 @@ def needs_review(doc: Document, tr: Translation, settings: Settings) -> bool:
 
 def step_translate(session: Session, doc: Document, llm: LLM, terms: list[Term], settings: Settings) -> None:
     tr = doc.translation
-    if doc.max_level == PublishLevel.full and doc.paragraphs_en:
+    if doc.language == "ar" and doc.max_level == PublishLevel.full and doc.paragraphs_en:
+        # Arabic-language source: the original text is published as is; only the summary is ours.
+        tr.paragraphs_ar, tr.notes = list(doc.paragraphs_en), []
+        tr.qa_report = {"score": None, "issues": [], "high": 0, "original_arabic": True}
+    elif doc.max_level == PublishLevel.full and doc.paragraphs_en:
         result = translate(llm, doc_input(doc), terms, settings, context_ar=tr.summary.get("thesis_ar", ""))
         for res in result.calls:
             record_usage(session, doc, "translate", res)
         tr.paragraphs_ar, tr.notes = result.paragraphs, result.notes
         tr.cost_usd += result.cost_usd
-        report, judge = qa_check(doc.paragraphs_en, result.paragraphs, terms, settings, llm)
+        report, judge = qa_check(doc.paragraphs_en, result.paragraphs, terms, settings, llm, lang=doc.language or "en")
         if judge:
             record_usage(session, doc, "qa_judge", judge)
             tr.cost_usd += judge.cost_usd
@@ -302,8 +311,10 @@ def claim_next(session: Session, stages: tuple[Stage, ...], exclude: set[int] | 
 
 
 def advance(session: Session, doc: Document, *, llm: LLM, client: PoliteClient, storage: LocalStorage,
-            settings: Settings, terms: list[Term]) -> Stage:
+            settings: Settings, terms: list[Term] | None = None) -> Stage:
     doc.error = None
+    if terms is None:
+        terms = load_terms(session, doc.language or "en")
     try:
         if doc.stage == Stage.discovered:
             step_extract(session, doc, client, storage, settings)

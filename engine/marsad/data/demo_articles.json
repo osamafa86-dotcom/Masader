@@ -30,6 +30,17 @@
    "description_ar": "مجلة محكّمة وهمية لأغراض العرض فقط، تُلخَّص دراساتها من ملخصاتها المنشورة.",
    "rights_level": "c",
    "license": null
+  },
+  {
+   "slug": "demo-revue",
+   "name": "Revue stratégique de démonstration",
+   "name_ar": "مجلة فرنسية تجريبية (بيانات عرض)",
+   "homepage": "https://example.org/demo-revue",
+   "kind": "journal",
+   "language": "fr",
+   "description_ar": "مصدر فرنسي وهمي لأغراض العرض فقط، بترخيص مفتوح افتراضي، لبيان الترجمة المباشرة من الفرنسية.",
+   "rights_level": "a",
+   "license": "CC BY 4.0 (demo)"
   }
  ],
  "articles": [
@@ -354,6 +365,63 @@
     "new_terms": [],
     "abstract_only": true
    }
+  },
+  {
+   "slug": "dissuasion-fr",
+   "source": "demo-revue",
+   "language": "fr",
+   "title_en": "La dissuasion française à l'épreuve de la haute intensité",
+   "url": "https://example.org/demo-revue/dissuasion",
+   "authors": [
+    "Claire Martin",
+    "Hugo Bernard"
+   ],
+   "published_at": "2026-11-12T08:00:00+00:00",
+   "paragraphs_en": [
+    "La dissuasion nucléaire française repose depuis 1964 sur une doctrine de stricte suffisance. Face au retour de la guerre de haute intensité en Europe, cette doctrine fait l'objet d'un débat renouvelé parmi les chercheurs et les responsables politiques.",
+    "Certains plaident pour une dimension européenne de la dissuasion, sans partage de la décision. D'autres estiment que l'autonomie stratégique exige d'abord de renforcer la base industrielle et technologique de défense, dont les capacités de production restent limitées.",
+    "Les auteurs concluent que la crédibilité de la dissuasion dépendra moins de nouvelles armes que de la cohérence entre la doctrine, les moyens conventionnels et la volonté politique affichée à l'égard de l'OTAN."
+   ],
+   "classification": {
+    "topics": [
+     "deterrence",
+     "alliances"
+    ],
+    "regions": [
+     "europe"
+    ],
+    "doc_type": "peer-reviewed",
+    "importance": 4,
+    "keywords_en": [
+     "dissuasion nucléaire",
+     "autonomie stratégique",
+     "BITD"
+    ]
+   },
+   "summary": {
+    "title_ar": "الردع الفرنسي في اختبار الحرب عالية الشدة",
+    "dek_ar": "يرى الكاتبان أن مصداقية الردع الفرنسي تتوقف على انسجام العقيدة والوسائل التقليدية والإرادة السياسية أكثر من الأسلحة الجديدة.",
+    "thesis_ar": "يعرض الكاتبان النقاش المتجدد حول عقيدة «الكفاية الصارمة» التي يقوم عليها الردع النووي الفرنسي منذ عام 1964، في ضوء عودة الحرب عالية الشدة إلى أوروبا، ويخلصان إلى أن مصداقية الردع مرهونة بالانسجام بين العقيدة والوسائل التقليدية والموقف السياسي تجاه حلف شمال الأطلسي (الناتو).",
+    "key_points_ar": [
+     "يدعو فريق إلى بُعد أوروبي للردع الفرنسي دون تقاسم قرار استخدامه.",
+     "يرى فريق آخر أن الأولوية لتعزيز القاعدة الصناعية والتكنولوجية الدفاعية ذات القدرات الإنتاجية المحدودة."
+    ],
+    "evidence_ar": "مراجعة للنقاش الفرنسي الأكاديمي والسياسي حول العقيدة النووية.",
+    "recommendations_ar": [],
+    "significance_ar": "تنقل المادة نقاشاً فرنسياً داخلياً نادراً ما يصل إلى القارئ العربي إلا عبر وسيط إنجليزي.",
+    "quotes": [],
+    "new_terms": [
+     {
+      "en": "stricte suffisance",
+      "ar": "الكفاية الصارمة"
+     }
+    ]
+   },
+   "paragraphs_ar": [
+    "يقوم الردع النووي الفرنسي منذ عام 1964 على عقيدة «الكفاية الصارمة» (stricte suffisance). ومع عودة الحرب عالية الشدة (haute intensité) إلى أوروبا، تجدّد النقاش حول هذه العقيدة بين الباحثين والمسؤولين السياسيين.",
+    "يدعو بعضهم إلى بُعد أوروبي للردع دون تقاسم القرار. ويرى آخرون أن الاستقلال الاستراتيجي (autonomie stratégique) يتطلب أولاً تعزيز القاعدة الصناعية والتكنولوجية الدفاعية، التي لا تزال قدراتها الإنتاجية محدودة.",
+    "ويخلص الكاتبان إلى أن مصداقية الردع ستتوقف على الانسجام بين العقيدة والوسائل التقليدية والإرادة السياسية المعلنة تجاه حلف شمال الأطلسي (الناتو)، أكثر من توقفها على أسلحة جديدة."
+   ]
   }
  ]
 }

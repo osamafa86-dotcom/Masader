@@ -82,7 +82,7 @@ def test_digest_requires_editor_send_and_filters_by_preferences(nl, db, settings
     mailer.sent.clear()
 
     draft = service.ensure_weekly_draft(db, settings)
-    assert draft is not None and len(draft.document_ids) == 5
+    assert draft is not None and len(draft.document_ids) == 6
     assert service.ensure_weekly_draft(db, settings) is None  # one open draft at a time
     # Nothing goes out without an editor pressing send.
     assert service.deliver_pending(db, mailer, settings) == 0 and mailer.sent == []

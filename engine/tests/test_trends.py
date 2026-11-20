@@ -39,13 +39,13 @@ def tr(db, session_factory, settings):
 
 def test_monthly_statistics(tr, db):
     stats = compute(db, "2026-11")
-    assert stats["total"] == 4 and stats["previous_total"] == 1 and stats["small_sample"] is True
+    assert stats["total"] == 5 and stats["previous_total"] == 1 and stats["small_sample"] is True
     topics = {r["slug"]: r for r in stats["topics"]}
     assert topics["intelligence"]["count"] == 2 and topics["intelligence"]["previous"] == 0
     assert topics["great-power"]["count"] == 0 and topics["great-power"]["previous"] == 1
-    assert sum(w["count"] for w in stats["weeks"]) == 4
+    assert sum(w["count"] for w in stats["weeks"]) == 5
     assert {i["importance"] for i in stats["top_items"]} == {4}
-    assert stats["rising_topics"][0]["slug"] == "intelligence"
+    assert [r["slug"] for r in stats["rising_topics"][:2]] == ["deterrence", "intelligence"]  # tie: by slug
 
 
 def test_empty_month_is_explicit(tr):
@@ -60,9 +60,9 @@ def test_empty_month_is_explicit(tr):
 def test_report_draft_review_publish(tr):
     api, h, llm = tr
     d = api.post("/api/editor/trends/2026-11/draft", headers=h).json()
-    assert d["narrative_is_draft"] is True and "رُصدت 4 مادة" in d["narrative_ar"]
+    assert d["narrative_is_draft"] is True and "رُصدت 5 مادة" in d["narrative_ar"]
     sent = [p for t, p in llm.calls if t == "trend_narrative"][0]
-    assert sent["total"] == 4 and "rising_topics" in sent  # the model only sees the computed numbers
+    assert sent["total"] == 5 and "rising_topics" in sent  # the model only sees the computed numbers
     assert api.get("/api/trends/2026-11").json()["report"] is None  # drafts are not public
     assert api.post("/api/editor/trends/2026-11/publish", headers=h).status_code == 409
     api.patch("/api/editor/trends/2026-11", headers=h, json={"narrative_ar": "قراءة الشهر بعد مراجعة المحرر للأرقام."})

@@ -16,7 +16,7 @@ def _load(name: str):
 SOURCE_FIELDS = (
     "name", "name_ar", "homepage", "kind", "description_ar", "fetch_method", "feed_url",
     "listing_config", "fetch_interval_min", "license", "rights_evidence",
-    "per_item_copyright_check", "is_active", "content_mode",
+    "per_item_copyright_check", "is_active", "content_mode", "language",
 )
 
 
@@ -44,6 +44,8 @@ def seed_sources(session: Session) -> int:
                 value = 60
             if field == "content_mode" and value is None:
                 value = "full"
+            if field == "language" and value is None:
+                value = "en"
             setattr(src, field, value)
         count += 1
     session.flush()
@@ -66,11 +68,14 @@ def seed_taxonomy(session: Session) -> int:
 
 def seed_glossary(session: Session) -> int:
     count = 0
-    for term_en, (term_ar, domain, variants) in _load("glossary.yaml").items():
-        existing = session.scalar(select(GlossaryTerm).where(GlossaryTerm.term_en == term_en))
-        if existing is None:  # never overwrite an editor's later correction
-            session.add(GlossaryTerm(term_en=term_en, term_ar=term_ar, domain=domain, variants_ar=variants or []))
-        count += 1
+    lists = {"en": _load("glossary.yaml"), **_load("glossary_multilingual.yaml")}
+    for lang, terms in lists.items():
+        for term, (term_ar, domain, variants) in terms.items():
+            existing = session.scalar(select(GlossaryTerm).where(GlossaryTerm.lang == lang, GlossaryTerm.term_en == term))
+            if existing is None:  # never overwrite an editor's later correction
+                session.add(GlossaryTerm(lang=lang, term_en=term, term_ar=term_ar, domain=domain,
+                                         variants_ar=variants or []))
+            count += 1
     session.flush()
     return count
 

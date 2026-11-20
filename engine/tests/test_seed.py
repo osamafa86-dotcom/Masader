@@ -14,7 +14,7 @@ def test_seed_is_idempotent_and_sets_rights(db):
     db.commit()
 
     assert first == second
-    assert db.scalar(select(func.count()).select_from(Source)) == 19
+    assert db.scalar(select(func.count()).select_from(Source)) == 23
     assert db.scalar(select(func.count()).select_from(Source).where(Source.is_active)) == 16
     assert db.scalar(select(func.count()).select_from(GlossaryTerm)) == glossary_count >= 100
     assert db.scalar(select(func.count()).select_from(TaxonomyTerm)) == taxonomy_count

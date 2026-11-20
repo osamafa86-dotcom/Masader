@@ -243,7 +243,8 @@ def retranslate_paragraph(doc_id: int, idx: int, user: User = Depends(current_us
     if doc.max_level != PublishLevel.full or not 0 <= idx < len(doc.paragraphs_en or []):
         raise HTTPException(400, "لا يمكن ترجمة هذه الفقرة")
     context = (doc.translation.summary or {}).get("thesis_ar", "") if doc.translation else ""
-    text, notes, res = translate_one(llm, doc_input(doc), idx, load_terms(db), settings, context_ar=context)
+    text, notes, res = translate_one(llm, doc_input(doc), idx, load_terms(db, doc.language or "en"), settings,
+                                     context_ar=context)
     record_usage(db, doc, "retranslate", res)
     db.commit()
     return {"index": idx, "ar": text, "notes": notes}
@@ -303,6 +304,7 @@ def import_item(body: ImportIn, user: User = Depends(current_user), db: Session 
 
 # ---------------------------------------------------------------- glossary
 class TermIn(BaseModel):
+    lang: str = Field("en", pattern="^[a-z]{2}$")
     term_en: str = Field(..., min_length=1, max_length=200)
     term_ar: str = Field(..., min_length=1, max_length=200)
     variants_ar: list[str] = []
@@ -312,7 +314,7 @@ class TermIn(BaseModel):
 
 
 def _term_json(t: GlossaryTerm) -> dict:
-    return {"id": t.id, "term_en": t.term_en, "term_ar": t.term_ar, "variants_ar": t.variants_ar,
+    return {"id": t.id, "lang": t.lang, "term_en": t.term_en, "term_ar": t.term_ar, "variants_ar": t.variants_ar,
             "definition_ar": t.definition_ar, "domain": t.domain, "status": t.status,
             "proposal_count": t.proposal_count, "example_document_id": t.example_document_id}
 
@@ -328,10 +330,11 @@ def list_terms(status: str | None = None, user: User = Depends(current_user), db
 
 @router.post("/glossary")
 def upsert_term(body: TermIn, user: User = Depends(current_user), db: Session = Depends(get_db)):
-    term = db.scalar(select(GlossaryTerm).where(func.lower(GlossaryTerm.term_en) == body.term_en.lower().strip()))
+    term = db.scalar(select(GlossaryTerm).where(GlossaryTerm.lang == body.lang,
+                                                func.lower(GlossaryTerm.term_en) == body.term_en.lower().strip()))
     before = _term_json(term) if term else None
     if term is None:
-        term = GlossaryTerm(term_en=body.term_en.strip(), created_by=user.id)
+        term = GlossaryTerm(lang=body.lang, term_en=body.term_en.strip(), created_by=user.id)
         db.add(term)
     term.term_ar, term.variants_ar = body.term_ar.strip(), [v.strip() for v in body.variants_ar if v.strip()]
     term.definition_ar, term.domain, term.status = body.definition_ar, body.domain, body.status

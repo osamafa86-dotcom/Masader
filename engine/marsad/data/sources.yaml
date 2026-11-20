@@ -237,3 +237,46 @@
   fetch_method: none
   rights_level: c
   rights_evidence: Commercial subscription service; not monitored automatically.
+# ---- Phase 3: non-English sources (inactive until feed, rights and glossary are verified) ----
+- slug: ifri
+  name: Institut français des relations internationales
+  name_ar: المعهد الفرنسي للعلاقات الدولية
+  homepage: https://www.ifri.org
+  kind: think_tank
+  description_ar: أبرز مراكز الأبحاث الفرنسية في العلاقات الدولية والدفاع.
+  language: fr
+  fetch_method: rss
+  feed_url: https://www.ifri.org/fr/rss.xml
+  fetch_interval_min: 360
+  rights_level: c
+- slug: riac
+  name: Russian International Affairs Council
+  name_ar: المجلس الروسي للشؤون الدولية
+  homepage: https://russiancouncil.ru
+  kind: think_tank
+  description_ar: مركز أبحاث روسي في السياسة الخارجية، يعرض رؤى الدوائر الأكاديمية والرسمية الروسية.
+  language: ru
+  fetch_method: rss
+  feed_url: https://russiancouncil.ru/rss/
+  fetch_interval_min: 360
+  rights_level: c
+- slug: inss-he
+  name: Institute for National Security Studies (Hebrew)
+  name_ar: معهد دراسات الأمن القومي الإسرائيلي (بالعبرية)
+  homepage: https://www.inss.org.il/he/
+  kind: think_tank
+  description_ar: مركز أبحاث إسرائيلي في الأمن القومي، يُرصد ما ينشره بالعبرية.
+  language: he
+  fetch_method: rss
+  feed_url: https://www.inss.org.il/he/feed/
+  fetch_interval_min: 360
+  rights_level: c
+- slug: ciis
+  name: China Institute of International Studies
+  name_ar: المعهد الصيني للدراسات الدولية
+  homepage: https://www.ciis.org.cn
+  kind: think_tank
+  description_ar: مركز أبحاث تابع لوزارة الخارجية الصينية. لا خلاصة معروفة؛ تُضاف مواده بالاستيراد اليدوي.
+  language: zh
+  fetch_method: none
+  rights_level: c

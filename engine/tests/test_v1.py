@@ -35,7 +35,7 @@ def test_key_required_and_hashed(v1, db):
     stored = db.scalar(select(ApiClient))
     assert stored.key_hash != key and key not in stored.key_hash
     r = api.get("/v1/articles", headers={"X-API-Key": key})
-    assert r.status_code == 200 and r.json()["meta"]["total"] == 5
+    assert r.status_code == 200 and r.json()["meta"]["total"] == 6
     assert r.headers["X-RateLimit-Limit"] == "5" and r.headers["X-RateLimit-Remaining"] == "4"
     assert api.get("/v1/sources", headers={"Authorization": f"Bearer {key}"}).status_code == 200
 
@@ -69,7 +69,7 @@ def test_filters_and_search(v1):
     assert api.get("/v1/articles", headers=h, params={"source": "demo-journal"}).json()["meta"]["total"] == 2
     assert api.get("/v1/articles", headers=h, params={"since": "2099-01-01"}).json()["meta"]["total"] == 0
     res = api.get("/v1/search", headers=h, params={"q": "ردع"}).json()
-    assert res["meta"]["total"] == 1 and res["mode"] == "keyword"
+    assert res["meta"]["total"] == 2 and res["mode"] == "keyword"
     assert api.get("/v1/openapi.json").status_code == 200  # docs are public, data is not
 
 
