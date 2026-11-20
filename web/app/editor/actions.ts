@@ -1,0 +1,90 @@
+"use server";
+import { cookies } from "next/headers";
+import { revalidatePath, revalidateTag } from "next/cache";
+import { redirect } from "next/navigation";
+import { ENGINE_URL } from "@/lib/api";
+import { TOKEN_COOKIE, editorFetch } from "@/lib/editor";
+import type { EditorItem } from "@/lib/types";
+
+export type ActionResult = { ok: boolean; message: string; item?: EditorItem; email?: string } | null;
+
+export async function login(_prev: ActionResult, form: FormData): Promise<ActionResult> {
+  const res = await fetch(`${ENGINE_URL}/api/editor/login`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ email: form.get("email"), password: form.get("password") }),
+  });
+  if (!res.ok) return { ok: false, message: "البريد الإلكتروني أو كلمة المرور غير صحيحة.", email: String(form.get("email") ?? "") };
+  const { token } = await res.json();
+  (await cookies()).set(TOKEN_COOKIE, token, {
+    httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/", maxAge: 60 * 60 * 24 * 14,
+  });
+  redirect("/editor");
+}
+
+export async function logout() {
+  await editorFetch("/api/editor/logout", { method: "POST" }).catch(() => null);
+  (await cookies()).delete(TOKEN_COOKIE);
+  redirect("/editor/login");
+}
+
+async function run(fn: () => Promise<EditorItem>, message: string, touchesPublic = false): Promise<ActionResult> {
+  try {
+    const item = await fn();
+    if (touchesPublic) {
+      revalidateTag("public");
+      revalidatePath("/", "layout");
+    }
+    return { ok: true, message, item };
+  } catch (e) {
+    if (e && typeof e === "object" && "digest" in e) throw e; // let redirect() propagate
+    return { ok: false, message: e instanceof Error ? e.message : "تعذّر تنفيذ الإجراء." };
+  }
+}
+
+export async function saveItem(id: number, patch: Record<string, unknown>, published: boolean): Promise<ActionResult> {
+  return run(() => editorFetch<EditorItem>(`/api/editor/items/${id}`, { method: "PATCH", body: JSON.stringify(patch) }),
+    "حُفظت التعديلات.", published);
+}
+
+export async function itemAction(id: number, action: "publish" | "reject" | "unpublish" | "retry", reason = ""): Promise<ActionResult> {
+  const labels = { publish: "نُشرت المادة.", reject: "رُفضت المادة.", unpublish: "أُزيلت المادة من الموقع.", retry: "أُعيدت المادة إلى خط المعالجة." };
+  return run(() => editorFetch<EditorItem>(`/api/editor/items/${id}/${action}`, { method: "POST", body: JSON.stringify({ reason }) }),
+    labels[action], action === "publish" || action === "unpublish");
+}
+
+export async function retranslate(id: number, index: number): Promise<{ ok: boolean; ar?: string; message?: string }> {
+  try {
+    const r = await editorFetch<{ ar: string }>(`/api/editor/items/${id}/paragraphs/${index}/retranslate`, { method: "POST" });
+    return { ok: true, ar: r.ar };
+  } catch (e) {
+    if (e && typeof e === "object" && "digest" in e) throw e;
+    return { ok: false, message: e instanceof Error ? e.message : "تعذّرت إعادة الترجمة." };
+  }
+}
+
+export async function upsertTerm(form: FormData) {
+  await editorFetch("/api/editor/glossary", {
+    method: "POST",
+    body: JSON.stringify({
+      term_en: form.get("term_en"),
+      term_ar: form.get("term_ar"),
+      variants_ar: String(form.get("variants_ar") ?? "").split(/[،,]/).map((v) => v.trim()).filter(Boolean),
+      definition_ar: form.get("definition_ar") ?? "",
+      domain: form.get("domain") || "general",
+      status: form.get("status") || "approved",
+    }),
+  });
+  revalidateTag("public");
+  revalidatePath("/editor/glossary");
+}
+
+export async function deleteTerm(form: FormData) {
+  await editorFetch(`/api/editor/glossary/${form.get("id")}`, { method: "DELETE" });
+  revalidatePath("/editor/glossary");
+}
+
+export async function resolveFeedback(form: FormData) {
+  await editorFetch(`/api/editor/feedback/${form.get("id")}/resolve`, { method: "POST" });
+  revalidatePath("/editor/feedback");
+}

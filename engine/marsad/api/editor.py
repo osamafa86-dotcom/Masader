@@ -106,7 +106,7 @@ def stats(user: User = Depends(current_user), db: Session = Depends(get_db), set
         "daily_budget_usd": settings.daily_budget_usd,
         "open_feedback": open_feedback,
         "proposed_terms": proposed,
-        "sources": [{"slug": s.slug, "name": s.name, "rights_level": s.rights_level.value,
+        "sources": [{"slug": s.slug, "name": s.name, "name_ar": s.name_ar, "rights_level": s.rights_level.value,
                      "last_success_at": s.last_success_at.isoformat() if s.last_success_at else None,
                      "last_fetched_at": s.last_fetched_at.isoformat() if s.last_fetched_at else None,
                      "last_error": s.last_error} for s in sources],
