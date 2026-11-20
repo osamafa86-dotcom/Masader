@@ -18,6 +18,9 @@ export type ArticleCard = {
   importance: number | null;
   url: string;
   word_count: number;
+  basis: "full_text" | "abstract" | "title";
+  meta: { journal?: string; volume?: string; issue?: string; start_page?: string; end_page?: string; doi?: string; open_access?: boolean };
+  authors_detail: { name: string; slug: string }[];
 };
 
 export type ArticleDetail = ArticleCard & {
@@ -35,7 +38,14 @@ export type ArticleDetail = ArticleCard & {
   glossary: { en: string; ar: string; definition_ar: string }[];
   translation: { model: string; prompt_version: string; reviewed_at: string | null };
   citation_original: string;
+  citations: { apa: string; chicago: string; bibtex: string; translation: string };
 };
+
+export type Related = { items: ArticleCard[]; basis: "semantic" | "tags" };
+export type Issue = { volume: string; issue: string; count: number; latest: string | null };
+export type AuthorPage = Page<ArticleCard> & { name: string; name_ar: string | null; affiliation: string | null; slug: string; sources: string[] };
+export type SearchPage = Page<ArticleCard> & { mode: "keyword" | "semantic" };
+export type Subscription = { email: string; confirmed: boolean; active: boolean; topics: string[]; sources: string[]; keywords: string[] };
 
 export type Page<T> = { items: T[]; total: number; page: number; per_page: number; q?: string };
 
@@ -69,6 +79,10 @@ export type EditorItem = {
   max_level: "full" | "summary";
   word_count: number;
   abstract_en: string | null;
+  meta: Record<string, any>;
+  item_license: string | null;
+  item_rights_evidence: string | null;
+  content_mode: string;
   paragraphs_en: string[];
   topics: Tag[];
   regions: Tag[];
@@ -108,4 +122,10 @@ export type Stats = {
   open_feedback: number;
   proposed_terms: number;
   sources: { slug: string; name: string; name_ar: string; rights_level: string; last_success_at: string | null; last_fetched_at: string | null; last_error: string | null }[];
+};
+
+export type DigestRow = {
+  id: number; status: "draft" | "sending" | "sent"; subject_ar: string; intro_ar: string;
+  period_start: string; period_end: string; document_ids: number[]; sent_at: string | null;
+  deliveries: Record<string, number>; items?: QueueRow[];
 };

@@ -88,3 +88,50 @@ export async function resolveFeedback(form: FormData) {
   await editorFetch(`/api/editor/feedback/${form.get("id")}/resolve`, { method: "POST" });
   revalidatePath("/editor/feedback");
 }
+
+export async function importItem(_prev: ActionResult, form: FormData): Promise<ActionResult> {
+  let id: number;
+  try {
+    const r = await editorFetch<{ id: number }>("/api/editor/import", {
+      method: "POST",
+      body: JSON.stringify({ url: form.get("url"), source_slug: form.get("source_slug"), title: form.get("title") ?? "" }),
+    });
+    id = r.id;
+  } catch (e) {
+    if (e && typeof e === "object" && "digest" in e) throw e;
+    return { ok: false, message: e instanceof Error ? e.message : "تعذّر الاستيراد." };
+  }
+  redirect(`/editor/items/${id}`);
+}
+
+export async function setLicense(id: number, license: string, evidence: string): Promise<ActionResult> {
+  return run(() => editorFetch<EditorItem>(`/api/editor/items/${id}/license`, {
+    method: "POST", body: JSON.stringify({ license, evidence }),
+  }), "سُجّل الترخيص، وأُعيدت المادة إلى خط المعالجة لترجمة نصها الكامل.");
+}
+
+export async function createDigest() {
+  const r = await editorFetch<{ id: number }>("/api/editor/digests", { method: "POST" }).catch((e: Error) => {
+    if (e && typeof e === "object" && "digest" in e) throw e;
+    return { id: 0, error: e.message };
+  });
+  if ("error" in r) redirect(`/editor/newsletter?error=${encodeURIComponent(String(r.error))}`);
+  redirect(`/editor/newsletter/${r.id}`);
+}
+
+export async function saveDigest(id: number, form: FormData) {
+  await editorFetch(`/api/editor/digests/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({
+      subject_ar: form.get("subject_ar"), intro_ar: form.get("intro_ar"),
+      document_ids: form.getAll("document_ids").map(Number),
+    }),
+  });
+  revalidatePath(`/editor/newsletter/${id}`);
+}
+
+export async function sendDigest(id: number) {
+  await editorFetch(`/api/editor/digests/${id}/send`, { method: "POST" });
+  revalidatePath("/editor/newsletter");
+  redirect("/editor/newsletter");
+}

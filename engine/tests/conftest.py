@@ -20,6 +20,8 @@ FIXTURES = Path(__file__).parent / "fixtures"
 @pytest.fixture(scope="session")
 def engine():
     eng = make_engine(get_settings().database_url)
+    with eng.begin() as conn:
+        conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
     Base.metadata.drop_all(eng)
     Base.metadata.create_all(eng)
     yield eng

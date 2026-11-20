@@ -19,6 +19,17 @@
    "description_ar": "مصدر وهمي لأغراض العرض والاختبار فقط، محمي الحقوق فيُنشر ملخصه فقط.",
    "rights_level": "c",
    "license": null
+  },
+  {
+   "slug": "demo-journal",
+   "name": "Demo Journal of Security Studies",
+   "name_ar": "مجلة تجريبية للدراسات الأمنية (بيانات عرض)",
+   "homepage": "https://example.org/demo-journal",
+   "kind": "journal",
+   "content_mode": "abstract",
+   "description_ar": "مجلة محكّمة وهمية لأغراض العرض فقط، تُلخَّص دراساتها من ملخصاتها المنشورة.",
+   "rights_level": "c",
+   "license": null
   }
  ],
  "articles": [
@@ -234,6 +245,114 @@
       "ar": "كاسحة الجليد"
      }
     ]
+   }
+  },
+  {
+   "slug": "coalition-intel",
+   "source": "demo-journal",
+   "title_en": "Coalition Intelligence Sharing and the Limits of Trust",
+   "url": "https://example.org/demo-journal/coalition-intel",
+   "authors": [
+    "Maria Lopez",
+    "Tom Reed"
+   ],
+   "published_at": "2026-11-16T00:00:00+00:00",
+   "meta": {
+    "journal": "Demo Journal of Security Studies",
+    "volume": "12",
+    "issue": "3",
+    "start_page": "412",
+    "end_page": "435",
+    "doi": "10.0000/demo.2026.0412"
+   },
+   "abstract_en": "Intelligence sharing within coalitions is widely assumed to deepen with alliance duration. Drawing on declassified records from three multinational operations between 1991 and 2011, this article argues that sharing is limited less by distrust of partners than by domestic legal restrictions and classification systems. It finds that informal liaison networks repeatedly compensated for formal barriers, and it proposes a typology of four sharing arrangements.",
+   "paragraphs_en": [],
+   "classification": {
+    "topics": [
+     "intelligence",
+     "alliances"
+    ],
+    "regions": [
+     "global"
+    ],
+    "doc_type": "peer-reviewed",
+    "importance": 4,
+    "keywords_en": [
+     "intelligence sharing",
+     "liaison",
+     "classification"
+    ]
+   },
+   "summary": {
+    "title_ar": "تبادل المعلومات الاستخباراتية في التحالفات وحدود الثقة",
+    "dek_ar": "تخلص الدراسة إلى أن ما يقيّد تبادل المعلومات بين الحلفاء هو القيود القانونية الداخلية وأنظمة التصنيف أكثر من انعدام الثقة.",
+    "thesis_ar": "تعارض الدراسة الافتراض الشائع بأن تبادل المعلومات الاستخباراتية داخل التحالفات يتعمق مع طول عمر التحالف، وتجادل استناداً إلى وثائق رُفعت عنها السرية من ثلاث عمليات متعددة الجنسيات بين عامي 1991 و2011 بأن القيود القانونية الداخلية وأنظمة تصنيف المعلومات تحدّ من التبادل أكثر مما يحدّه انعدام الثقة بين الشركاء.",
+    "key_points_ar": [
+     "شبكات الاتصال غير الرسمية عوّضت مراراً عن العوائق الرسمية أمام تبادل المعلومات.",
+     "تقترح الدراسة تصنيفاً لأربعة أنماط من ترتيبات التبادل."
+    ],
+    "evidence_ar": "",
+    "recommendations_ar": [],
+    "significance_ar": "ما سبق مبني على الملخص المنشور للدراسة. تقدم الدراسة تفسيراً مؤسسياً لحدود التعاون الاستخباراتي بين الحلفاء.",
+    "quotes": [],
+    "new_terms": [
+     {
+      "en": "liaison",
+      "ar": "الاتصال الاستخباراتي"
+     }
+    ],
+    "abstract_only": true
+   }
+  },
+  {
+   "slug": "satellite-warning",
+   "source": "demo-journal",
+   "title_en": "Strategic Warning in the Age of Commercial Satellites",
+   "url": "https://example.org/demo-journal/satellite-warning",
+   "authors": [
+    "Lee Chen"
+   ],
+   "published_at": "2026-11-10T00:00:00+00:00",
+   "meta": {
+    "journal": "Demo Journal of Security Studies",
+    "volume": "12",
+    "issue": "3",
+    "start_page": "390",
+    "end_page": "411",
+    "open_access": true
+   },
+   "abstract_en": "Commercial satellite imagery has transformed strategic warning. Using case studies of troop build-ups observed by private firms before 2022, the article shows how open imagery shortened decision timelines for governments and created new pressures on intelligence agencies to declassify their own assessments quickly. It concludes that warning has become a public process.",
+   "paragraphs_en": [],
+   "classification": {
+    "topics": [
+     "intelligence",
+     "military-tech"
+    ],
+    "regions": [
+     "global"
+    ],
+    "doc_type": "peer-reviewed",
+    "importance": 3,
+    "keywords_en": [
+     "commercial satellite imagery",
+     "strategic warning"
+    ]
+   },
+   "summary": {
+    "title_ar": "الإنذار الاستراتيجي في عصر الأقمار الصناعية التجارية",
+    "dek_ar": "غيّرت صور الأقمار الصناعية التجارية طبيعة الإنذار الاستراتيجي وجعلته عملية علنية، بحسب الدراسة.",
+    "thesis_ar": "تبيّن الدراسة، من خلال حالات حشد عسكري رصدتها شركات خاصة قبل عام 2022، أن الصور المفتوحة اختصرت المدد المتاحة للحكومات لاتخاذ القرار، وفرضت على أجهزة الاستخبارات ضغوطاً جديدة لرفع السرية عن تقييماتها بسرعة.",
+    "key_points_ar": [
+     "اختصرت الصور التجارية المفتوحة الوقت المتاح لاتخاذ القرار.",
+     "تواجه أجهزة الاستخبارات ضغطاً لرفع السرية عن تقييماتها بسرعة.",
+     "تخلص الدراسة إلى أن الإنذار أصبح عملية علنية."
+    ],
+    "evidence_ar": "",
+    "recommendations_ar": [],
+    "significance_ar": "ما سبق مبني على الملخص المنشور للدراسة.",
+    "quotes": [],
+    "new_terms": [],
+    "abstract_only": true
    }
   }
  ]

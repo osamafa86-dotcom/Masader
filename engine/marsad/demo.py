@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from marsad.ai.demo import DEMO, demo_handler
 from marsad.ai.llm import FakeLLM
 from marsad.config import Settings
-from marsad.models import Document, RawItem, RightsLevel, Source, Stage
+from marsad.models import Document, PublishLevel, RawItem, RightsLevel, Source, Stage
 from marsad.normalize import content_hash, url_hash, word_count
 from marsad.authors import link_authors
 from marsad.pipeline import advance, load_terms, publish
@@ -24,6 +24,7 @@ def load_demo(session: Session, settings: Settings, publish_items: bool = True) 
             session.add(src)
         for key in ("name", "name_ar", "homepage", "kind", "description_ar", "license"):
             setattr(src, key, row[key])
+        src.content_mode = row.get("content_mode", "full")
         src.rights_level = RightsLevel(row["rights_level"])
         sources[row["slug"]] = src
     session.flush()
@@ -43,9 +44,11 @@ def load_demo(session: Session, settings: Settings, publish_items: bool = True) 
         paras = art["paragraphs_en"]
         doc = Document(source_id=src.id, raw_item_id=raw.id, url=art["url"], title_en=art["title_en"],
                        authors=art["authors"], published_at=published, paragraphs_en=paras,
-                       word_count=word_count(paras), content_hash=content_hash(paras), stage=Stage.extracted)
+                       abstract_en=art.get("abstract_en"), meta=art.get("meta", {}),
+                       word_count=word_count(paras), content_hash=content_hash(paras) if paras else None,
+                       stage=Stage.extracted)
         doc.source = src
-        doc.max_level = max_publish_level(src, "\n".join(paras), settings)
+        doc.max_level = max_publish_level(src, "\n".join(paras), settings) if paras else PublishLevel.summary
         session.add(doc)
         session.flush()
         link_authors(session, doc)

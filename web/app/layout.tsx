@@ -27,6 +27,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <span>{SITE_NAME}: رصد الدراسات الاستراتيجية والأمنية وتقديمها بالعربية.</span>
             <nav aria-label="روابط الموقع">
               <a href="/methodology">المنهجية وسياسة الحقوق</a>
+              <a href="/subscribe">النشرة الأسبوعية</a>
               <a href="/feed.xml">خلاصة RSS</a>
               <a href="/editor">غرفة التحرير</a>
             </nav>

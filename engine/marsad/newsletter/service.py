@@ -167,7 +167,7 @@ def deliver_pending(session: Session, mailer: Mailer, settings: Settings, batch:
                 d.status = "skipped"  # nothing matches this reader's alerts this week: send nothing
                 continue
             html, text = render.digest(settings, digest.subject_ar, digest.intro_ar, items, sub.token)
-            unsub = f"{settings.site_url.rstrip('/')}/unsubscribe?token={sub.token}"
+            unsub = f"{settings.site_url.rstrip('/')}/api/newsletter/unsubscribe?token={sub.token}"
             try:
                 mailer.send(sub.email, digest.subject_ar, html, text, headers={
                     "List-Unsubscribe": f"<{unsub}>", "List-Unsubscribe-Post": "List-Unsubscribe=One-Click"})

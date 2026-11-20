@@ -5,7 +5,7 @@ import { deleteTerm, upsertTerm } from "../actions";
 export const dynamic = "force-dynamic";
 export const metadata = { title: "إدارة المسرد", robots: { index: false } };
 
-type Row = { id: number; term_en: string; term_ar: string; variants_ar: string[]; definition_ar: string; domain: string; status: string };
+type Row = { id: number; term_en: string; term_ar: string; variants_ar: string[]; definition_ar: string; domain: string; status: string; proposal_count: number; example_document_id: number | null };
 
 export default async function EditorGlossary({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
   const status = (await searchParams).status ?? "proposed";
@@ -30,13 +30,16 @@ export default async function EditorGlossary({ searchParams }: { searchParams: P
       </section>
       {rows.length === 0 ? <p className="empty">لا توجد مصطلحات في هذه القائمة.</p> : (
         <table className="glossary-table">
-          <thead><tr><th scope="col">الإنجليزي</th><th scope="col">العربي</th><th scope="col">بدائل</th><th scope="col">إجراء</th></tr></thead>
+          <thead><tr><th scope="col">الإنجليزي</th><th scope="col">العربي</th><th scope="col">بدائل</th>{status === "proposed" && <th scope="col">مرات الاقتراح</th>}<th scope="col">إجراء</th></tr></thead>
           <tbody>
             {rows.map((r) => (
               <tr key={r.id}>
                 <td className="en" dir="ltr">{r.term_en}</td>
                 <td><strong>{r.term_ar}</strong></td>
                 <td className="muted">{r.variants_ar.join("، ")}</td>
+                {status === "proposed" && (
+                  <td className="ui">{r.proposal_count}{r.example_document_id && <> <Link href={`/editor/items/${r.example_document_id}`}>مثال</Link></>}</td>
+                )}
                 <td>
                   <div className="badges">
                     {r.status === "proposed" && (

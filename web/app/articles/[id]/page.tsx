@@ -3,7 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ApiError, api } from "@/lib/api";
 import { arDate, authorsLine, readingMinutes, SITE_NAME } from "@/lib/format";
-import { Badges } from "@/components/ArticleList";
+import { ArticleList, Badges, journalLine } from "@/components/ArticleList";
+import { CitationBox } from "@/components/CopyBox";
 import { Body, FeedbackForm } from "@/components/Body";
 import { Ar } from "@/components/Ar";
 
@@ -31,6 +32,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 export default async function ArticlePage({ params }: { params: Promise<{ id: string }> }) {
   const a = await load((await params).id);
+  const related = await api.related(a.id).catch(() => ({ items: [], basis: "tags" as const }));
   const s = a.summary;
   const jsonLd = {
     "@context": "https://schema.org",
@@ -54,16 +56,40 @@ export default async function ArticlePage({ params }: { params: Promise<{ id: st
         <h1>{a.title_ar}</h1>
         <bdi className="title-en" lang="en" dir="ltr">{a.title_en}</bdi>
         <div className="byline">
-          {a.authors.length > 0 && <span>تأليف <strong><bdi>{authorsLine(a.authors)}</bdi></strong></span>}
+          {a.authors_detail.length > 0 && (
+            <span>تأليف{" "}
+              {a.authors_detail.map((au, i) => (
+                <span key={au.slug}>{i > 0 && (i === a.authors_detail.length - 1 ? " و" : "، ")}
+                  <Link href={`/authors/${au.slug}`}><strong><bdi>{au.name}</bdi></strong></Link></span>
+              ))}
+            </span>
+          )}
+          {a.authors_detail.length === 0 && a.authors.length > 0 && <span>تأليف <strong><bdi>{authorsLine(a.authors)}</bdi></strong></span>}
+          {a.meta.volume && <span>{a.meta.journal ?? a.source.name}، {journalLine(a.meta)}</span>}
           {a.original_published_at && <span>نُشر الأصل في {arDate(a.original_published_at)}</span>}
           {a.word_count > 0 && <span>قراءة الأصل نحو {readingMinutes(a.word_count)} دقيقة</span>}
         </div>
         <Badges a={a} />
         {a.dek_ar && <p className="dek-lg"><Ar text={a.dek_ar} /></p>}
-        <a className="origin-link" href={a.url} rel="noopener" target="_blank">اقرأ النص الأصلي لدى {a.source.name_ar}</a>
+        <a className="origin-link" href={a.meta.doi ? `https://doi.org/${a.meta.doi}` : a.url} rel="noopener" target="_blank">
+          اقرأ النص الأصلي لدى {a.source.name_ar}
+        </a>
+        {a.meta.doi && <div className="ui muted">المعرّف الرقمي <bdi className="latin" dir="ltr">doi:{a.meta.doi}</bdi></div>}
       </header>
 
-      <section className="summary-panel" aria-labelledby="summary-title">
+      {a.basis === "abstract" && (
+        <p className="notice" style={{ maxWidth: 860 }}>
+          النص الكامل لهذه الدراسة متاح لدى الناشر للمشتركين، لذلك بُني هذا الملخص على الملخص المنشور للدراسة وحده،
+          ولا يتجاوز ما ورد فيه.
+        </p>
+      )}
+      {a.basis === "title" && (
+        <p className="notice" style={{ maxWidth: 860 }}>
+          هذا مدخل من فهرس العدد: ترجمنا العنوان فقط لأن الناشر لا يتيح ملخصاً للمادة. افتح الرابط للاطلاع على الأصل.
+        </p>
+      )}
+
+      {a.basis !== "title" && <section className="summary-panel" aria-labelledby="summary-title">
         <h2 id="summary-title">الملخص التحليلي</h2>
         {s.thesis_ar && <><h3>الأطروحة</h3><p><Ar text={s.thesis_ar} /></p></>}
         {!!s.key_points_ar?.length && <><h3>أبرز النقاط</h3><ul>{s.key_points_ar.map((p, i) => <li key={i}><Ar text={p} /></li>)}</ul></>}
@@ -76,11 +102,11 @@ export default async function ArticlePage({ params }: { params: Promise<{ id: st
             <blockquote key={i} className="quote"><p>«<Ar text={q.ar} />»<bdi className="en" lang="en" dir="ltr">“{q.en}”</bdi></p></blockquote>
           ))}
         </>}
-      </section>
+      </section>}
 
       {a.body ? <Body docId={a.id} body={a.body} /> : (
         <section className="prose">
-          <p className="notice">{a.rights_note}</p>
+          <p className="notice"><Ar text={a.rights_note} /></p>
           <details>
             <summary className="ui">أبلغ عن خطأ في هذا الملخص</summary>
             <FeedbackForm docId={a.id} />
@@ -94,7 +120,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ id: st
           <dl>
             <dt>المصدر</dt><dd><a href={a.source.homepage} rel="noopener" target="_blank">{a.source.name_ar}</a></dd>
             {a.license && <><dt>الترخيص</dt><dd><bdi>{a.license}</bdi></dd></>}
-            <dt>حقوق النشر</dt><dd>{a.rights_note}</dd>
+            <dt>حقوق النشر</dt><dd><Ar text={a.rights_note} /></dd>
           </dl>
         </section>
         <section>
@@ -107,9 +133,14 @@ export default async function ArticlePage({ params }: { params: Promise<{ id: st
             <dt>المنهجية</dt><dd><Link href="/methodology">كيف نترجم ونراجع</Link></dd>
           </dl>
         </section>
-        <section>
-          <h2>للاستشهاد بالأصل</h2>
-          <p className="cite" lang="en" dir="ltr">{a.citation_original}</p>
+        <section className="wide">
+          <h2>للاستشهاد</h2>
+          <CitationBox formats={[
+            { key: "apa", label: "APA", text: a.citations.apa, ltr: true },
+            { key: "chicago", label: "شيكاغو", text: a.citations.chicago, ltr: true },
+            { key: "bibtex", label: "BibTeX", text: a.citations.bibtex, ltr: true },
+            { key: "translation", label: "هذه الترجمة", text: a.citations.translation, ltr: false },
+          ]} />
         </section>
         {a.glossary.length > 0 && (
           <section>
@@ -120,6 +151,13 @@ export default async function ArticlePage({ params }: { params: Promise<{ id: st
           </section>
         )}
       </div>
+
+      {related.items.length > 0 && (
+        <section className="related" aria-labelledby="related-title">
+          <h2 id="related-title">مواد ذات صلة</h2>
+          <ArticleList items={related.items} />
+        </section>
+      )}
     </article>
   );
 }

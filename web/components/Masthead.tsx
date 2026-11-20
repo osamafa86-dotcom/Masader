@@ -43,6 +43,8 @@ function EditorBar() {
           <Link href="/editor">صف المراجعة</Link>
           <Link href="/editor?stage=failed">المتعثرة</Link>
           <Link href="/editor?stage=published">المنشورة</Link>
+          <Link href="/editor/import">استيراد</Link>
+          <Link href="/editor/newsletter">النشرة</Link>
           <Link href="/editor/glossary">المسرد</Link>
           <Link href="/editor/feedback">بلاغات القرّاء</Link>
           <Link href="/" target="_blank">الموقع العام</Link>

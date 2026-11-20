@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
 import type { EditorItem, QAIssue } from "@/lib/types";
 import { arDate } from "@/lib/format";
-import { itemAction, retranslate, saveItem, type ActionResult } from "../../actions";
+import { itemAction, retranslate, saveItem, setLicense, type ActionResult } from "../../actions";
 
 const STAGE_AR: Record<string, string> = {
   discovered: "رُصدت", extracted: "استُخرج النص", classified: "صُنّفت", summarized: "لُخّصت", translated: "تُرجمت",
@@ -101,6 +101,8 @@ export function ItemEditor({ initial }: { initial: EditorItem }) {
           {tr && <span className="badge">التكلفة ${tr.cost_usd.toFixed(3)}</span>}
         </div>
         <a className="origin-link" href={item.url} target="_blank" rel="noopener">فتح الأصل</a>
+        {item.meta?.volume && <div className="ui muted">{item.meta.journal}، المجلد {item.meta.volume}، العدد {item.meta.issue}{item.meta.doi && <>، <bdi dir="ltr">doi:{item.meta.doi}</bdi></>}</div>}
+        {item.meta?.open_access && <p className="notice">تشير الخلاصة إلى أن هذه المادة متاحة بوصول مفتوح. إن تحققت من ترخيصها لدى الناشر فسجّله أدناه لترجمة نصها الكامل.</p>}
         {item.error && <p className="notice error">{item.error}</p>}
       </header>
 
@@ -113,6 +115,21 @@ export function ItemEditor({ initial }: { initial: EditorItem }) {
         {item.stage === "published" && <Link className="btn secondary" href={`/articles/${item.id}`} target="_blank">عرض في الموقع</Link>}
         {result && <span className={`notice ${result.ok ? "ok" : "error"}`} role="status" style={{ margin: 0 }}>{result.message}</span>}
       </div>
+
+      {item.max_level === "summary" && item.stage !== "published" && (
+        <details className="summary-panel" style={{ maxWidth: 1100, padding: "1rem 1.5rem" }}>
+          <summary className="ui"><strong>ترخيص خاص بهذه المادة</strong> (مقال بوصول مفتوح مثلاً)</summary>
+          <form style={{ marginTop: "1rem" }} onSubmit={(e) => {
+            e.preventDefault();
+            const f = new FormData(e.currentTarget);
+            start(async () => apply(await setLicense(item.id, String(f.get("license")), String(f.get("evidence")))));
+          }}>
+            <div className="field"><label htmlFor="license">الترخيص</label><input id="license" name="license" required placeholder="CC BY 4.0" dir="ltr" defaultValue={item.item_license ?? ""} /></div>
+            <div className="field"><label htmlFor="evidence">الدليل</label><input id="evidence" name="evidence" required minLength={5} placeholder="رابط صفحة الترخيص لدى الناشر وتاريخ التحقق" defaultValue={item.item_rights_evidence ?? ""} /></div>
+            <button className="btn" disabled={pending}>سجّل الترخيص وأعد المعالجة</button>
+          </form>
+        </details>
+      )}
 
       {!tr ? <p className="empty">لم تُعدّ الترجمة بعد. ستظهر هنا بعد مرور المادة على خط المعالجة.</p> : (
         <>

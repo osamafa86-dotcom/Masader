@@ -82,7 +82,7 @@ def test_digest_requires_editor_send_and_filters_by_preferences(nl, db, settings
     mailer.sent.clear()
 
     draft = service.ensure_weekly_draft(db, settings)
-    assert draft is not None and len(draft.document_ids) == 3
+    assert draft is not None and len(draft.document_ids) == 5
     assert service.ensure_weekly_draft(db, settings) is None  # one open draft at a time
     # Nothing goes out without an editor pressing send.
     assert service.deliver_pending(db, mailer, settings) == 0 and mailer.sent == []
@@ -102,7 +102,7 @@ def test_digest_requires_editor_send_and_filters_by_preferences(nl, db, settings
     assert "الإمداد البحري" in by_to["kw@example.org"]["html"]
     headers = by_to["all@example.org"]["headers"]
     assert headers["List-Unsubscribe-Post"] == "List-Unsubscribe=One-Click"
-    assert "/unsubscribe?token=" in headers["List-Unsubscribe"]
+    assert "/api/newsletter/unsubscribe?token=" in headers["List-Unsubscribe"]
     db.expire_all()
     assert db.get(Digest, draft.id).status == "sent"
     statuses = {d.status for d in db.scalars(select(DigestDelivery))}

@@ -57,9 +57,9 @@ def api_with(session_factory, settings, embedder):
 
 def test_embed_pending_is_incremental(demo):
     emb = FakeEmbedder()
-    assert embed_pending(demo, emb) == 3
+    assert embed_pending(demo, emb) == 5
     assert embed_pending(demo, emb) == 0
-    assert demo.scalar(select(func.count()).select_from(DocEmbedding)) == 3
+    assert demo.scalar(select(func.count()).select_from(DocEmbedding)) == 5
     assert embed_pending(demo, BrokenEmbedder()) == 0  # model changed but provider down: nothing breaks
 
 

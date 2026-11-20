@@ -1,5 +1,5 @@
 import "server-only";
-import type { ArticleCard, ArticleDetail, GlossaryRow, Page, SourceRow, Topics } from "./types";
+import type { ArticleCard, ArticleDetail, AuthorPage, GlossaryRow, Issue, Page, Related, SearchPage, SourceRow, Topics } from "./types";
 
 export const ENGINE_URL = process.env.ENGINE_URL ?? "http://127.0.0.1:8000";
 const REVALIDATE = Number(process.env.PUBLIC_REVALIDATE_SECONDS ?? 60);
@@ -25,6 +25,21 @@ export const api = {
   article: (id: number) => get<ArticleDetail>(`/api/articles/${id}`),
   sources: () => get<SourceRow[]>("/api/sources"),
   topics: () => get<Topics>("/api/topics"),
-  search: (q: string, page = 1) => get<Page<ArticleCard>>("/api/search", { q, page }),
+  search: (q: string, page = 1, mode: "keyword" | "semantic" = "keyword") => get<SearchPage>("/api/search", { q, page, mode }),
+  related: (id: number) => get<Related>(`/api/articles/${id}/related`),
+  author: (slug: string, page = 1) => get<AuthorPage>(`/api/authors/${encodeURIComponent(slug)}`, { page }),
+  issues: (slug: string) => get<Issue[]>(`/api/sources/${encodeURIComponent(slug)}/issues`),
+  issue: (slug: string, volume: string, issue: string) =>
+    get<{ volume: string; issue: string; items: ArticleCard[] }>(`/api/sources/${encodeURIComponent(slug)}/issues/${encodeURIComponent(volume)}/${encodeURIComponent(issue)}`),
   glossary: (q?: string) => get<GlossaryRow[]>("/api/glossary", { q }),
 };
+
+/** Uncached call for the newsletter flows (each response depends on a personal token). */
+export async function engine<T>(path: string, init: RequestInit = {}): Promise<{ status: number; data: T | null }> {
+  const res = await fetch(`${ENGINE_URL}${path}`, {
+    ...init, cache: "no-store", headers: { "content-type": "application/json", ...(init.headers ?? {}) },
+  });
+  let data: T | null = null;
+  try { data = (await res.json()) as T; } catch { /* empty body */ }
+  return { status: res.status, data };
+}

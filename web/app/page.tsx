@@ -20,6 +20,10 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
         <Pager page={page} total={articles.total} perPage={articles.per_page} base="/" />
       </section>
       <aside className="rail">
+        <section className="subscribe-cta">
+          <p>مختارات أسبوعية يراجعها المحررون، بحسب الموضوعات التي تختارها.</p>
+          <Link className="btn accent" href="/subscribe">اشترك في النشرة</Link>
+        </section>
         <section>
           <h2>المصادر المرصودة</h2>
           <ul>
