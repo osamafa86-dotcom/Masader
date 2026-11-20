@@ -144,9 +144,27 @@ def worker(once: bool = typer.Option(False, help="run a single cycle and exit"),
     _logging(verbose)
     settings = get_settings()
     if once:
-        typer.echo(run_once(session_factory(), make_llm(settings), PoliteClient(settings), settings))
+        from marsad.embed import make_embedder
+
+        typer.echo(run_once(session_factory(), make_llm(settings), PoliteClient(settings), settings,
+                            make_embedder(settings)))
     else:
         run_forever(session_factory(), settings)
+
+
+@app.command()
+def embed():
+    """Embed every published document that has no vector yet (backfill after enabling semantic search)."""
+    from marsad.embed import embed_pending, make_embedder
+
+    embedder = make_embedder(get_settings())
+    if embedder is None:
+        raise typer.BadParameter("no embedding backend: set MARSAD_VOYAGE_API_KEY or MARSAD_EMBED_BACKEND")
+    total = 0
+    with session_scope() as s:
+        while n := embed_pending(s, embedder):
+            total += n
+    typer.echo(f"embedded {total} documents with {embedder.model}")
 
 
 @app.command()

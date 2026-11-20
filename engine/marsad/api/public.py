@@ -5,11 +5,13 @@ from pydantic import BaseModel, Field
 from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session, selectinload
 
-from marsad.api.deps import get_db, get_settings_dep
+from marsad.api.deps import get_db, get_embedder, get_settings_dep
+from marsad.embed import embed_query
 from marsad.api.serialize import article_card, article_detail, source_brief
 from marsad.arabic import loose_form, normalize_ar
 from marsad.models import (
     Author,
+    DocEmbedding,
     Document,
     DocumentAuthor,
     DocumentTag,
@@ -151,14 +153,85 @@ def list_topics(db: Session = Depends(get_db)):
     return out
 
 
-@router.get("/search")
-def search(q: str = Query(..., min_length=2, max_length=200), page: int = Query(1, ge=1),
-           per_page: int = Query(20, ge=1, le=50), db: Session = Depends(get_db)):
+RRF_K = 60
+CANDIDATES = 60
+
+
+def _keyword_ids(db: Session, q: str) -> list[int]:
     # The index holds normalised and article-stripped forms; the stripped form of the query matches both.
     tsq = func.plainto_tsquery("simple", loose_form(q))
-    query = published().where(Translation.search_vector.op("@@")(tsq)).order_by(
-        func.ts_rank(Translation.search_vector, tsq).desc(), Translation.published_at.desc())
-    return {**_page(db, query, page, per_page), "q": q}
+    return list(db.scalars(
+        select(Document.id).join(Translation).where(Document.stage == Stage.published,
+                                                    Translation.search_vector.op("@@")(tsq))
+        .order_by(func.ts_rank(Translation.search_vector, tsq).desc(), Translation.published_at.desc())
+        .limit(CANDIDATES)).all())
+
+
+def _vector_ids(db: Session, vec: list[float], min_similarity: float, exclude: int | None = None,
+                limit: int = CANDIDATES) -> list[int]:
+    distance = DocEmbedding.embedding.cosine_distance(vec)
+    q = (select(DocEmbedding.document_id).join(Document, Document.id == DocEmbedding.document_id)
+         .where(Document.stage == Stage.published, distance <= 1 - min_similarity).order_by(distance).limit(limit))
+    if exclude is not None:
+        q = q.where(DocEmbedding.document_id != exclude)
+    return list(db.scalars(q).all())
+
+
+def _fuse(*rankings: list[int]) -> list[int]:
+    """Reciprocal rank fusion: robust way to merge keyword and vector rankings without score calibration."""
+    scores: dict[int, float] = {}
+    for ranking in rankings:
+        for rank, doc_id in enumerate(ranking):
+            scores[doc_id] = scores.get(doc_id, 0.0) + 1.0 / (RRF_K + rank + 1)
+    return sorted(scores, key=lambda i: -scores[i])
+
+
+def _cards_in_order(db: Session, ids: list[int]) -> list[dict]:
+    if not ids:
+        return []
+    docs = {d.id: d for d in db.scalars(published().where(Document.id.in_(ids))).unique().all()}
+    return [article_card(docs[i]) for i in ids if i in docs]
+
+
+@router.get("/search")
+def search(q: str = Query(..., min_length=2, max_length=200), page: int = Query(1, ge=1),
+           per_page: int = Query(20, ge=1, le=50), mode: str = Query("keyword", pattern="^(keyword|semantic)$"),
+           db: Session = Depends(get_db), embedder=Depends(get_embedder), settings=Depends(get_settings_dep)):
+    keyword = _keyword_ids(db, q)
+    used = "keyword"
+    ranking = keyword
+    if mode == "semantic":
+        vec = embed_query(embedder, q)
+        if vec is not None:
+            ranking = _fuse(keyword, _vector_ids(db, vec, settings.semantic_min_similarity))
+            used = "semantic"
+    start = (page - 1) * per_page
+    return {"items": _cards_in_order(db, ranking[start:start + per_page]), "total": len(ranking), "page": page,
+            "per_page": per_page, "q": q, "mode": used}
+
+
+@router.get("/articles/{doc_id}/related")
+def related(doc_id: int, limit: int = Query(5, ge=1, le=12), db: Session = Depends(get_db),
+            settings=Depends(get_settings_dep)):
+    doc = db.scalar(published().where(Document.id == doc_id))
+    if doc is None:
+        raise HTTPException(404, "المادة غير موجودة")
+    ids: list[int] = []
+    emb = db.get(DocEmbedding, doc_id)
+    if emb is not None:
+        ids = _vector_ids(db, list(emb.embedding), settings.semantic_min_similarity, exclude=doc_id, limit=limit)
+    if len(ids) < limit:  # fall back to (or top up with) items sharing the most topic and region tags
+        term_ids = [t.term_id for t in doc.tags if t.term.kind in ("topic", "region")]
+        if term_ids:
+            shared = func.count(DocumentTag.term_id)
+            rows = db.execute(
+                select(Document.id, shared).join(DocumentTag).join(Translation)
+                .where(Document.stage == Stage.published, Document.id != doc_id,
+                       DocumentTag.term_id.in_(term_ids), Document.id.not_in(ids or [0]))
+                .group_by(Document.id, Translation.published_at)
+                .order_by(shared.desc(), Translation.published_at.desc()).limit(limit - len(ids))).all()
+            ids += [r[0] for r in rows]
+    return {"items": _cards_in_order(db, ids), "basis": "semantic" if emb is not None else "tags"}
 
 
 @router.get("/glossary")

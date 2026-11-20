@@ -34,6 +34,12 @@ class Settings(BaseSettings):
     chunk_words: int = 1800
     daily_budget_usd: float = 15.0
 
+    # Embeddings (semantic search, related items)
+    embed_backend: str = "auto"  # auto | voyage | fake | none
+    embed_model: str = "voyage-3.5"
+    voyage_api_key: str = ""
+    semantic_min_similarity: float = 0.35
+
     # Editorial policy
     review_min_importance: int = 3
     auto_publish: bool = False

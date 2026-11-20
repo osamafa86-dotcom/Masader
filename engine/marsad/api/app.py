@@ -10,7 +10,8 @@ from marsad.config import Settings, get_settings
 from marsad.db import session_factory
 
 
-def create_app(settings: Settings | None = None, factory: sessionmaker | None = None, llm=None) -> FastAPI:
+def create_app(settings: Settings | None = None, factory: sessionmaker | None = None, llm=None,
+               embedder="default") -> FastAPI:
     settings = settings or get_settings()
     app = FastAPI(title="Marsad API", version="0.1.0")
     app.state.settings = settings
@@ -19,6 +20,10 @@ def create_app(settings: Settings | None = None, factory: sessionmaker | None = 
         from marsad.worker import make_llm
         llm = make_llm(settings)
     app.state.llm = llm
+    if embedder == "default":
+        from marsad.embed import make_embedder
+        embedder = make_embedder(settings)
+    app.state.embedder = embedder
     app.include_router(public.router)
     app.include_router(editor.router)
     return app

@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from marsad.ai.llm import LLM, AnthropicLLM, FakeLLM
 from marsad.config import Settings
+from marsad.embed import embed_pending, make_embedder
 from marsad.fetch.http import PoliteClient
 from marsad.fetch.run import due_sources, fetch_source
 from marsad.models import Stage
@@ -46,7 +47,8 @@ def _drain(factory: sessionmaker[Session], stages: tuple[Stage, ...], limit: int
     return done
 
 
-def run_once(factory: sessionmaker[Session], llm: LLM, client: PoliteClient, settings: Settings) -> dict:
+def run_once(factory: sessionmaker[Session], llm: LLM, client: PoliteClient, settings: Settings,
+             embedder=None) -> dict:
     storage = LocalStorage(settings.storage_dir)
     counts = {"fetched": 0, "extracted": 0, "ai_steps": 0}
     with factory() as session:
@@ -57,15 +59,18 @@ def run_once(factory: sessionmaker[Session], llm: LLM, client: PoliteClient, set
     # Later stages first, so documents already in flight finish before new ones start.
     for stage in reversed(AI_STAGES):
         counts["ai_steps"] += _drain(factory, (stage,), settings.worker_batch, settings, True, **deps)
+    if embedder is not None:
+        with factory() as session:
+            counts["embedded"] = embed_pending(session, embedder)
     return counts
 
 
 def run_forever(factory: sessionmaker[Session], settings: Settings) -> None:
-    llm, client = make_llm(settings), PoliteClient(settings)
+    llm, client, embedder = make_llm(settings), PoliteClient(settings), make_embedder(settings)
     log.info("worker started (llm=%s, interval=%ss)", settings.llm_backend, settings.worker_interval_s)
     while True:
         try:
-            counts = run_once(factory, llm, client, settings)
+            counts = run_once(factory, llm, client, settings, embedder)
             log.info("cycle done: %s", counts)
         except Exception:  # noqa: BLE001
             log.exception("worker cycle failed")
