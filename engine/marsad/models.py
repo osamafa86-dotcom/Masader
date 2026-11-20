@@ -17,6 +17,7 @@ from sqlalchemy import (
     UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR
+from pgvector.sqlalchemy import Vector
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -66,6 +67,7 @@ class Source(Base):
     kind: Mapped[str] = mapped_column(String(32))  # think_tank | journal | media | government
     description_ar: Mapped[str] = mapped_column(Text, default="")
     fetch_method: Mapped[str] = mapped_column(String(16), default="rss")  # rss | listing | none
+    content_mode: Mapped[str] = mapped_column(String(16), default="full", server_default="full")  # full | abstract
     feed_url: Mapped[str | None] = mapped_column(String(500))
     listing_config: Mapped[dict] = mapped_column(JSONB, default=dict)
     fetch_interval_min: Mapped[int] = mapped_column(Integer, default=60)
@@ -96,6 +98,7 @@ class RawItem(Base):
     feed_content: Mapped[str | None] = mapped_column(Text)  # full HTML when the feed carries it
     feed_summary: Mapped[str | None] = mapped_column(Text)
     feed_authors: Mapped[list] = mapped_column(JSONB, default=list)
+    feed_meta: Mapped[dict] = mapped_column(JSONB, default=dict, server_default="{}")
     raw_key: Mapped[str | None] = mapped_column(String(300))  # storage key of downloaded page/PDF
     content_type: Mapped[str | None] = mapped_column(String(100))
 
@@ -125,12 +128,17 @@ class Document(Base):
     importance: Mapped[int | None] = mapped_column(Integer)
     keywords: Mapped[list] = mapped_column(JSONB, default=list)
     max_level: Mapped[PublishLevel] = mapped_column(_enum(PublishLevel, "publish_level"), default=PublishLevel.summary)
+    meta: Mapped[dict] = mapped_column(JSONB, default=dict, server_default="{}")  # journal, volume, issue, pages, doi
+    item_license: Mapped[str | None] = mapped_column(String(64))
+    item_rights_evidence: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
 
     source: Mapped[Source] = relationship()
     translation: Mapped["Translation | None"] = relationship(back_populates="document", uselist=False)
     tags: Mapped[list["DocumentTag"]] = relationship(cascade="all, delete-orphan")
+    author_links: Mapped[list["DocumentAuthor"]] = relationship(cascade="all, delete-orphan",
+                                                                 order_by="DocumentAuthor.position")
 
 
 class Translation(Base):
@@ -192,6 +200,8 @@ class GlossaryTerm(Base):
     definition_ar: Mapped[str] = mapped_column(Text, default="")
     domain: Mapped[str] = mapped_column(String(64), default="general")
     status: Mapped[str] = mapped_column(String(16), default="approved")  # approved | proposed
+    proposal_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    example_document_id: Mapped[int | None] = mapped_column(ForeignKey("documents.id", ondelete="SET NULL"))
     created_by: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
@@ -251,3 +261,78 @@ class AiUsage(Base):
     output_tokens: Mapped[int] = mapped_column(Integer, default=0)
     cost_usd: Mapped[float] = mapped_column(Float, default=0.0)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
+
+
+class Author(Base):
+    __tablename__ = "authors"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    slug: Mapped[str] = mapped_column(String(200), unique=True)
+    name: Mapped[str] = mapped_column(String(300))
+    name_ar: Mapped[str | None] = mapped_column(String(300))
+    affiliation: Mapped[str | None] = mapped_column(String(300))
+
+
+class DocumentAuthor(Base):
+    __tablename__ = "document_authors"
+
+    document_id: Mapped[int] = mapped_column(ForeignKey("documents.id", ondelete="CASCADE"), primary_key=True)
+    author_id: Mapped[int] = mapped_column(ForeignKey("authors.id", ondelete="CASCADE"), primary_key=True)
+    position: Mapped[int] = mapped_column(Integer, default=0)
+
+    author: Mapped[Author] = relationship()
+
+
+EMBED_DIM = 1024
+
+
+class DocEmbedding(Base):
+    __tablename__ = "doc_embeddings"
+
+    document_id: Mapped[int] = mapped_column(ForeignKey("documents.id", ondelete="CASCADE"), primary_key=True)
+    model: Mapped[str] = mapped_column(String(64))
+    embedding = mapped_column(Vector(EMBED_DIM), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class Subscriber(Base):
+    __tablename__ = "subscribers"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    email: Mapped[str] = mapped_column(String(320), unique=True)
+    token: Mapped[str] = mapped_column(String(64), unique=True)  # used in confirm / manage / unsubscribe links
+    confirmed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    unsubscribed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    topics: Mapped[list] = mapped_column(JSONB, default=list)
+    sources: Mapped[list] = mapped_column(JSONB, default=list)
+    keywords: Mapped[list] = mapped_column(JSONB, default=list)
+    confirmation_sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class Digest(Base):
+    __tablename__ = "digests"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    period_start: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    period_end: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    status: Mapped[str] = mapped_column(String(16), default="draft")  # draft | sending | sent
+    subject_ar: Mapped[str] = mapped_column(String(300), default="")
+    intro_ar: Mapped[str] = mapped_column(Text, default="")
+    document_ids: Mapped[list] = mapped_column(JSONB, default=list)
+    approved_by: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class DigestDelivery(Base):
+    __tablename__ = "digest_deliveries"
+    __table_args__ = (UniqueConstraint("digest_id", "subscriber_id"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    digest_id: Mapped[int] = mapped_column(ForeignKey("digests.id", ondelete="CASCADE"))
+    subscriber_id: Mapped[int] = mapped_column(ForeignKey("subscribers.id", ondelete="CASCADE"))
+    status: Mapped[str] = mapped_column(String(16), default="pending")  # pending | sent | skipped | failed
+    item_count: Mapped[int] = mapped_column(Integer, default=0)
+    error: Mapped[str | None] = mapped_column(Text)
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
