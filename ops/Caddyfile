@@ -1,0 +1,10 @@
+{$SITE_DOMAIN} {
+	encode zstd gzip
+	# The engine API stays private; only the website is exposed.
+	reverse_proxy web:3000
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+	}
+}

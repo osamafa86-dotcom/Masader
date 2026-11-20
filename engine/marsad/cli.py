@@ -27,9 +27,8 @@ def db_upgrade():
     from alembic import command
     from alembic.config import Config
 
-    root = Path(__file__).resolve().parent.parent
-    cfg = Config(str(root / "alembic.ini"))
-    cfg.set_main_option("script_location", str(root / "migrations"))
+    cfg = Config()  # no ini file needed: works both from a checkout and from an installed package
+    cfg.set_main_option("script_location", str(Path(__file__).resolve().parent / "migrations"))
     command.upgrade(cfg, "head")
 
 

@@ -35,7 +35,7 @@ build-backend = "setuptools.build_meta"
 include = ["marsad*"]
 
 [tool.setuptools.package-data]
-marsad = ["data/*.yaml"]
+marsad = ["data/*.yaml", "data/*.json", "migrations/*.py", "migrations/*.mako", "migrations/versions/*.py"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
