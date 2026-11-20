@@ -239,7 +239,8 @@ async function step(name, fn) {
 
   await step("editor builds and publishes a dossier (model draft must be reviewed first)", async () => {
     await page.goto(BASE + "/editor/dossiers");
-    await page.getByPlaceholder("عنوان ملف جديد").fill(`ملف اختبار ${Date.now()}`);
+    const dossierTitle = `ملف اختبار ${Date.now()}`;
+    await page.getByPlaceholder("عنوان ملف جديد").fill(dossierTitle);
     await page.getByRole("button", { name: "أنشئ الملف" }).click();
     await page.waitForURL(/\/editor\/dossiers\/\d+/);
     await page.getByPlaceholder("كلمات البحث (اختيارية)").fill("الاستخبارات");
@@ -263,8 +264,9 @@ async function step(name, fn) {
     await page.getByRole("button", { name: "نشر الملف" }).click();
     await page.getByText("نُشر الملف").waitFor();
     await page.goto(BASE + "/dossiers");
-    await page.getByRole("link", { name: /ملف اختبار/ }).first().click();
-    await page.getByText("مقدمة راجعها المحرر في الاختبار الآلي.").waitFor();
+    await page.getByRole("link", { name: dossierTitle, exact: true }).click();
+    await page.waitForURL(/\/dossiers\/[^/]+$/);
+    await page.locator(".narrative").getByText("مقدمة راجعها المحرر في الاختبار الآلي.").waitFor();
   });
 
   await step("admin issues an API key that works once copied, and revokes it", async () => {
