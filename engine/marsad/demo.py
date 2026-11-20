@@ -10,6 +10,7 @@ from marsad.ai.llm import FakeLLM
 from marsad.config import Settings
 from marsad.models import Document, RawItem, RightsLevel, Source, Stage
 from marsad.normalize import content_hash, url_hash, word_count
+from marsad.authors import link_authors
 from marsad.pipeline import advance, load_terms, publish
 from marsad.rights import max_publish_level
 
@@ -47,6 +48,7 @@ def load_demo(session: Session, settings: Settings, publish_items: bool = True) 
         doc.max_level = max_publish_level(src, "\n".join(paras), settings)
         session.add(doc)
         session.flush()
+        link_authors(session, doc)
         terms = load_terms(session)
         for _ in range(3):
             advance(session, doc, llm=llm, client=None, storage=None, settings=settings, terms=terms)

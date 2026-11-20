@@ -16,6 +16,7 @@ from marsad.extract.html import extract_html, find_pdf_link, paragraphs_from_fra
 from marsad.extract.pdf import extract_pdf
 from marsad.extract.types import Extracted
 from marsad.fetch.http import FetchError, PoliteClient
+from marsad.authors import link_authors
 from marsad.journals import clean_abstract, has_abstract
 from marsad.models import (
     AiUsage,
@@ -130,12 +131,17 @@ def _extract_feed_only(doc: Document, raw: RawItem) -> None:
     doc.stage = Stage.extracted
 
 
+def _finish_extract(session: Session, doc: Document) -> None:
+    link_authors(session, doc)
+
+
 def step_extract(session: Session, doc: Document, client: PoliteClient, storage: LocalStorage, settings: Settings) -> None:
     raw = session.get(RawItem, doc.raw_item_id)
     doc.meta = {**(raw.feed_meta or {}), **({"journal": doc.source.name} if doc.source.kind == "journal" else {}),
                 **(doc.meta or {})}
     if doc.source.content_mode in ("abstract", "toc") and not doc.item_license:
         _extract_feed_only(doc, raw)
+        _finish_extract(session, doc)
         return
     fragment = paragraphs_from_fragment(raw.feed_content) if raw.feed_content else []
     if word_count(fragment) >= FEED_FULLTEXT_WORDS:
@@ -170,6 +176,7 @@ def step_extract(session: Session, doc: Document, client: PoliteClient, storage:
         if dup:
             doc.stage, doc.error = Stage.rejected, f"duplicate of document {dup}"
             return
+    _finish_extract(session, doc)
     doc.stage = Stage.extracted
 
 

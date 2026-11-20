@@ -2,6 +2,7 @@
 
 from marsad.ai.glossary import relevant_terms, Term
 from marsad.models import Document, GlossaryTerm, PublishLevel, Source, Translation
+from marsad.citations import all_citations
 from marsad.rights import rights_note
 
 
@@ -40,6 +41,7 @@ def article_card(doc: Document) -> dict:
         "dek_ar": (tr.summary or {}).get("dek_ar", ""),
         "source": source_brief(doc.source),
         "authors": doc.authors or [],
+        "authors_detail": [{"name": link.author.name, "slug": link.author.slug} for link in doc.author_links],
         "original_published_at": doc.published_at.isoformat() if doc.published_at else None,
         "published_at": tr.published_at.isoformat() if tr.published_at else None,
         "publish_level": effective_level(doc, tr).value,
@@ -61,7 +63,8 @@ def citation(doc: Document) -> str:
     return f"{authors} ({year}). {doc.title_en}. {doc.source.name}. {doc.url}"
 
 
-def article_detail(doc: Document, glossary: list[GlossaryTerm]) -> dict:
+def article_detail(doc: Document, glossary: list[GlossaryTerm], site_name: str = "مرصد",
+                   site_url: str = "") -> dict:
     tr = doc.translation
     level = effective_level(doc, tr)
     s = tr.summary or {}
@@ -82,6 +85,7 @@ def article_detail(doc: Document, glossary: list[GlossaryTerm]) -> dict:
         "translation": {"model": tr.model, "prompt_version": tr.prompt_version,
                         "reviewed_at": tr.reviewed_at.isoformat() if tr.reviewed_at else None},
         "citation_original": citation(doc),
+        "citations": all_citations(doc, site_name, site_url),
     }
 
 

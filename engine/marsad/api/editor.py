@@ -26,7 +26,7 @@ from marsad.pipeline import build_search_text, doc_input, load_terms, publish, r
 router = APIRouter(prefix="/api/editor")
 
 _LOAD = (selectinload(Document.translation), selectinload(Document.source),
-         selectinload(Document.tags).selectinload(DocumentTag.term))
+         selectinload(Document.tags).selectinload(DocumentTag.term), selectinload(Document.author_links))
 
 
 def _doc(db: Session, doc_id: int) -> Document:

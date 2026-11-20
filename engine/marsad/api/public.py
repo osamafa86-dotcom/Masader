@@ -5,11 +5,13 @@ from pydantic import BaseModel, Field
 from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session, selectinload
 
-from marsad.api.deps import get_db
+from marsad.api.deps import get_db, get_settings_dep
 from marsad.api.serialize import article_card, article_detail, source_brief
 from marsad.arabic import loose_form, normalize_ar
 from marsad.models import (
+    Author,
     Document,
+    DocumentAuthor,
     DocumentTag,
     Feedback,
     GlossaryTerm,
@@ -22,7 +24,8 @@ from marsad.models import (
 router = APIRouter(prefix="/api")
 
 _LOAD = (selectinload(Document.translation), selectinload(Document.source),
-         selectinload(Document.tags).selectinload(DocumentTag.term))
+         selectinload(Document.tags).selectinload(DocumentTag.term),
+         selectinload(Document.author_links).selectinload(DocumentAuthor.author))
 
 
 def published():
@@ -64,12 +67,25 @@ def list_articles(topic: str | None = None, region: str | None = None, source: s
 
 
 @router.get("/articles/{doc_id}")
-def get_article(doc_id: int, db: Session = Depends(get_db)):
+def get_article(doc_id: int, db: Session = Depends(get_db), settings=Depends(get_settings_dep)):
     doc = db.scalar(published().where(Document.id == doc_id))
     if doc is None:
         raise HTTPException(404, "المادة غير موجودة")
     glossary = db.scalars(select(GlossaryTerm).where(GlossaryTerm.status == "approved")).all()
-    return article_detail(doc, glossary)
+    return article_detail(doc, glossary, settings.site_name, settings.site_url)
+
+
+@router.get("/authors/{slug}")
+def get_author(slug: str, page: int = Query(1, ge=1), db: Session = Depends(get_db)):
+    author = db.scalar(select(Author).where(Author.slug == slug))
+    if author is None:
+        raise HTTPException(404, "الكاتب غير موجود")
+    q = published().where(Document.author_links.any(DocumentAuthor.author_id == author.id)) \
+        .order_by(Document.published_at.desc().nulls_last())
+    listing = _page(db, q, page, 20)
+    sources = sorted({a["source"]["name_ar"] for a in listing["items"]})
+    return {"name": author.name, "name_ar": author.name_ar, "affiliation": author.affiliation, "slug": author.slug,
+            "sources": sources, **listing}
 
 
 @router.get("/sources")
