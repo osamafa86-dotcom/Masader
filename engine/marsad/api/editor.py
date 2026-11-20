@@ -399,3 +399,68 @@ def patch_source(slug: str, body: SourcePatch, user: User = Depends(admin_user),
     db.commit()
     return {"slug": src.slug, "rights_level": src.rights_level.value, "license": src.license,
             "is_active": src.is_active, "feed_url": src.feed_url, "rights_evidence": src.rights_evidence}
+
+
+# ---------------------------------------------------------------- API clients (admin)
+class ApiClientIn(BaseModel):
+    name: str = Field(..., min_length=2, max_length=200)
+    organization: str = Field("", max_length=200)
+    contact_email: str = Field("", max_length=320)
+    rate_limit_per_minute: int = Field(60, ge=1, le=6000)
+
+
+def _client_json(db: Session, c) -> dict:
+    from datetime import datetime, timedelta, timezone
+
+    from marsad.models import ApiUsage
+
+    since = datetime.now(timezone.utc) - timedelta(days=30)
+    total = db.scalar(select(func.coalesce(func.sum(ApiUsage.count), 0)).where(
+        ApiUsage.client_id == c.id, ApiUsage.window_start >= since))
+    return {"id": c.id, "name": c.name, "organization": c.organization, "contact_email": c.contact_email,
+            "key_prefix": c.key_prefix, "rate_limit_per_minute": c.rate_limit_per_minute, "is_active": c.is_active,
+            "created_at": c.created_at.isoformat(), "requests_30d": int(total),
+            "last_used_at": c.last_used_at.isoformat() if c.last_used_at else None}
+
+
+@router.get("/api-clients")
+def list_api_clients(user: User = Depends(admin_user), db: Session = Depends(get_db)):
+    from marsad.models import ApiClient
+
+    return [_client_json(db, c) for c in db.scalars(select(ApiClient).order_by(ApiClient.created_at.desc())).all()]
+
+
+@router.post("/api-clients", status_code=201)
+def create_api_client(body: ApiClientIn, user: User = Depends(admin_user), db: Session = Depends(get_db)):
+    """The key is returned once, here; only its hash is stored."""
+    from marsad.api.keys import new_key
+    from marsad.models import ApiClient
+
+    key, key_hash, prefix = new_key()
+    c = ApiClient(name=body.name, organization=body.organization, contact_email=body.contact_email,
+                  rate_limit_per_minute=body.rate_limit_per_minute, key_hash=key_hash, key_prefix=prefix)
+    db.add(c)
+    db.flush()
+    _audit(db, user, "api_client_create", "api_client", c.id, name=c.name)
+    db.commit()
+    return {**_client_json(db, c), "key": key}
+
+
+class ApiClientPatch(BaseModel):
+    rate_limit_per_minute: int | None = Field(None, ge=1, le=6000)
+    is_active: bool | None = None
+
+
+@router.patch("/api-clients/{client_id}")
+def patch_api_client(client_id: int, body: ApiClientPatch, user: User = Depends(admin_user), db: Session = Depends(get_db)):
+    from marsad.models import ApiClient
+
+    c = db.get(ApiClient, client_id)
+    if c is None:
+        raise HTTPException(404, "غير موجود")
+    changes = body.model_dump(exclude_unset=True)
+    for k, v in changes.items():
+        setattr(c, k, v)
+    _audit(db, user, "api_client_update", "api_client", c.id, **changes)
+    db.commit()
+    return _client_json(db, c)
