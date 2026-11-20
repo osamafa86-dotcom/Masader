@@ -10,7 +10,9 @@ from marsad.extract.clean import clean_paragraphs
 from marsad.extract.types import Extracted
 
 PAGE_NUMBER = re.compile(r"^(page\s*)?\d{1,4}(\s*(of|/)\s*\d{1,4})?$", re.I)
-SMALL_FONT_RATIO = 0.85  # blocks clearly smaller than body text are footnotes, captions or page furniture
+SMALL_FONT_RATIO = 0.85
+HEADER_MAX_WORDS = 15  # running headers/footers are short; long repeated-looking blocks are body text
+TITLE_MAX_WORDS = 25  # blocks clearly smaller than body text are footnotes, captions or page furniture
 
 
 @dataclass
@@ -72,7 +74,8 @@ def extract_pdf(data: bytes) -> Extracted:
     body_size = sizes.most_common(1)[0][0] if sizes else 0
 
     # A block that repeats (digits ignored) on more than half the pages is a running header/footer.
-    counts = Counter(_norm(b.text) for blocks in pages for b in {x.text: x for x in blocks}.values())
+    counts = Counter(_norm(b.text) for blocks in pages for b in {x.text: x for x in blocks}.values()
+                     if len(b.text.split()) <= HEADER_MAX_WORDS)
     threshold = max(2, len(pages) // 2 + 1) if len(pages) > 2 else 99
     repeated = {k for k, v in counts.items() if v >= threshold}
 
@@ -95,6 +98,6 @@ def extract_pdf(data: bytes) -> Extracted:
     title = (meta.get("title") or "").strip()
     authors = [a.strip() for a in re.split(r";|,| and ", meta.get("author") or "") if a.strip()]
     paragraphs = clean_paragraphs(paragraphs)
-    if not title and paragraphs:
+    if not title and paragraphs and len(paragraphs[0].split()) <= TITLE_MAX_WORDS:
         title = paragraphs.pop(0)
     return Extracted(title=title, paragraphs=paragraphs, authors=authors)
