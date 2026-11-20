@@ -50,3 +50,6 @@ JUDGE = _obj({
         "detail_ar": STR,
     })},
 })
+
+DOSSIER_INTRO = _obj({"intro_ar": STR})
+TREND_NARRATIVE = _obj({"narrative_ar": STR})

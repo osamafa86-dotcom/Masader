@@ -32,4 +32,12 @@ def demo_handler(task: str, payload: dict) -> dict:
                 "notes": []}
     if task == "qa_judge":
         return {"issues": []}
+    if task == "dossier_intro":
+        n = len(payload.get("items", []))
+        return {"intro_ar": f"مقدمة تجريبية للملف «{payload.get('title_ar', '')}» تجمع {n} مواد. "
+                            "كُتبت دون نموذج لغوي في وضع العرض التجريبي، وتُستبدل بمقدمة يراجعها المحرر."}
+    if task == "trend_narrative":
+        total = payload.get("total", 0)
+        return {"narrative_ar": f"قراءة تجريبية لإحصاءات الشهر: رُصدت {total} مادة. "
+                                "كُتبت دون نموذج لغوي في وضع العرض التجريبي."}
     raise ValueError(f"unknown task {task}")

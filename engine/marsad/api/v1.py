@@ -89,6 +89,20 @@ def glossary(q: str | None = Query(None, max_length=100), db: Session = Depends(
     return {"data": public.glossary(q=q, db=db)}
 
 
+@router.get("/dossiers", summary="Published thematic dossiers")
+def dossiers(db: Session = Depends(get_db)):
+    from marsad.api import dossiers_api
+
+    return {"data": dossiers_api.list_dossiers(db=db)}
+
+
+@router.get("/dossiers/{slug}", summary="A dossier with its editorial introduction and items")
+def dossier(slug: str, db: Session = Depends(get_db)):
+    from marsad.api import dossiers_api
+
+    return {"data": dossiers_api.get_dossier(slug=slug, db=db)}
+
+
 def create_v1_app(parent_state) -> FastAPI:
     app = FastAPI(title="Marsad Public API", version="1.0.0", description=DESCRIPTION,
                   docs_url="/docs", redoc_url=None, openapi_url="/openapi.json")
