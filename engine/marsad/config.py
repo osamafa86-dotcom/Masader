@@ -49,6 +49,7 @@ class Settings(BaseSettings):
     smtp_starttls: bool = True
     smtp_from: str = "مرصد <newsletter@example.org>"
     mail_batch: int = 50
+    fake_mail_dir: str = ""  # with mail_backend=fake: write outgoing mail here for local development
 
     # Editorial policy
     review_min_importance: int = 3

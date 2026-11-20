@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 const LINKS = [
   { href: "/", label: "الأحدث" },
   { href: "/topics", label: "الموضوعات" },
+  { href: "/dossiers", label: "الملفات" },
+  { href: "/trends", label: "الاتجاهات" },
   { href: "/sources", label: "المصادر" },
   { href: "/glossary", label: "المسرد" },
   { href: "/methodology", label: "المنهجية" },
@@ -24,11 +26,14 @@ export function Masthead() {
             </Link>
           ))}
         </nav>
+        <div className="mast-tools">
         <form className="search-box" action="/search" role="search">
           <label htmlFor="q" className="skip-link">ابحث في المرصد</label>
           <input id="q" name="q" type="search" placeholder="ابحث بالعربية أو الإنجليزية" minLength={2} required />
           <button type="submit">بحث</button>
         </form>
+        <Link href="/account" className="ui">حسابي</Link>
+        </div>
       </div>
     </header>
   );
@@ -45,6 +50,9 @@ function EditorBar() {
           <Link href="/editor?stage=published">المنشورة</Link>
           <Link href="/editor/import">استيراد</Link>
           <Link href="/editor/newsletter">النشرة</Link>
+          <Link href="/editor/dossiers">الملفات</Link>
+          <Link href="/editor/trends">الاتجاهات</Link>
+          <Link href="/editor/api-clients">مفاتيح الواجهة</Link>
           <Link href="/editor/glossary">المسرد</Link>
           <Link href="/editor/feedback">بلاغات القرّاء</Link>
           <Link href="/" target="_blank">الموقع العام</Link>

@@ -4,7 +4,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { ENGINE_URL } from "@/lib/api";
 import { TOKEN_COOKIE, editorFetch } from "@/lib/editor";
-import type { EditorItem } from "@/lib/types";
+import type { ApiClientRow, EditorDossier, EditorItem, QueueRow } from "@/lib/types";
 
 export type ActionResult = { ok: boolean; message: string; item?: EditorItem; email?: string } | null;
 
@@ -134,4 +134,83 @@ export async function sendDigest(id: number) {
   await editorFetch(`/api/editor/digests/${id}/send`, { method: "POST" });
   revalidatePath("/editor/newsletter");
   redirect("/editor/newsletter");
+}
+
+// ---------------------------------------------------------------- phase 3
+
+export async function createDossier(form: FormData) {
+  const d = await editorFetch<EditorDossier>("/api/editor/dossiers", {
+    method: "POST", body: JSON.stringify({ title_ar: form.get("title_ar") }),
+  });
+  redirect(`/editor/dossiers/${d.id}`);
+}
+
+type DossierResult = { ok: boolean; message: string; dossier?: EditorDossier };
+
+async function dossierCall(fn: () => Promise<EditorDossier>, message: string): Promise<DossierResult> {
+  try {
+    const dossier = await fn();
+    revalidateTag("public");
+    return { ok: true, message, dossier };
+  } catch (e) {
+    if (e && typeof e === "object" && "digest" in e) throw e;
+    return { ok: false, message: e instanceof Error ? e.message : "تعذّر تنفيذ الإجراء." };
+  }
+}
+
+export async function saveDossier(id: number, patch: Record<string, unknown>) {
+  return dossierCall(() => editorFetch<EditorDossier>(`/api/editor/dossiers/${id}`, { method: "PATCH", body: JSON.stringify(patch) }), "حُفظ الملف.");
+}
+
+export async function dossierAction(id: number, action: "publish" | "unpublish" | "draft-intro") {
+  const msg = { publish: "نُشر الملف.", unpublish: "أُخفي الملف من الموقع.", "draft-intro": "كُتبت مقدمة مقترحة. راجعها واحفظها قبل النشر." }[action];
+  return dossierCall(() => editorFetch<EditorDossier>(`/api/editor/dossiers/${id}/${action}`, { method: "POST" }), msg);
+}
+
+export async function dossierSuggestions(id: number, q: string): Promise<QueueRow[]> {
+  return editorFetch<QueueRow[]>(`/api/editor/dossiers/${id}/suggestions?q=${encodeURIComponent(q)}`);
+}
+
+export async function draftTrend(month: string) {
+  await editorFetch(`/api/editor/trends/${month}/draft`, { method: "POST" }).catch((e: Error) => {
+    if (e && typeof e === "object" && "digest" in e) throw e;
+    redirect(`/editor/trends/${month}?error=${encodeURIComponent(e.message)}`);
+  });
+  revalidatePath(`/editor/trends/${month}`);
+}
+
+export async function saveTrend(month: string, form: FormData) {
+  await editorFetch(`/api/editor/trends/${month}`, { method: "PATCH", body: JSON.stringify({ narrative_ar: form.get("narrative_ar") }) });
+  revalidatePath(`/editor/trends/${month}`);
+}
+
+export async function publishTrend(month: string) {
+  await editorFetch(`/api/editor/trends/${month}/publish`, { method: "POST" }).catch((e: Error) => {
+    if (e && typeof e === "object" && "digest" in e) throw e;
+    redirect(`/editor/trends/${month}?error=${encodeURIComponent(e.message)}`);
+  });
+  revalidateTag("public");
+  revalidatePath(`/editor/trends/${month}`);
+}
+
+export type KeyState = { ok: boolean; message: string; client?: ApiClientRow } | null;
+
+export async function createApiClient(_: KeyState, form: FormData): Promise<KeyState> {
+  try {
+    const client = await editorFetch<ApiClientRow>("/api/editor/api-clients", {
+      method: "POST",
+      body: JSON.stringify({ name: form.get("name"), organization: form.get("organization") ?? "",
+                             contact_email: form.get("contact_email") ?? "", rate_limit_per_minute: Number(form.get("rate_limit") || 60) }),
+    });
+    revalidatePath("/editor/api-clients");
+    return { ok: true, message: "أُصدر المفتاح.", client };
+  } catch (e) {
+    if (e && typeof e === "object" && "digest" in e) throw e;
+    return { ok: false, message: e instanceof Error ? e.message : "تعذّر إصدار المفتاح." };
+  }
+}
+
+export async function setApiClientActive(id: number, active: boolean) {
+  await editorFetch(`/api/editor/api-clients/${id}`, { method: "PATCH", body: JSON.stringify({ is_active: active }) });
+  revalidatePath("/editor/api-clients");
 }

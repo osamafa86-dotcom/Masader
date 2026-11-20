@@ -12,6 +12,18 @@ const SUMMARY_ONLY = "الإمداد البحري بعد مناورات المح
 const JOURNAL_A = "تبادل المعلومات الاستخباراتية في التحالفات وحدود الثقة";
 const JOURNAL_B = "الإنذار الاستراتيجي في عصر الأقمار الصناعية التجارية";
 // Reads a subscriber token straight from the database (the demo mail backend keeps mail in memory).
+const ENGINE = process.env.ENGINE_URL ?? "http://127.0.0.1:8000";
+const OUTBOX = process.env.OUTBOX_DIR; // MARSAD_FAKE_MAIL_DIR of the engine under test
+const fs = require("node:fs");
+const path = require("node:path");
+function lastMailTo(email) {
+  const files = fs.readdirSync(OUTBOX).filter((f) => f.endsWith(".json")).sort().reverse();
+  for (const f of files) {
+    const m = JSON.parse(fs.readFileSync(path.join(OUTBOX, f), "utf8"));
+    if (m.to === email) return m;
+  }
+  throw new Error(`no mail to ${email}`);
+}
 const DB_TOKEN = (email) => execSync(`psql "${process.env.DATABASE_URL ?? "postgresql://marsad:marsad@127.0.0.1/marsad"}" -Atc "select token from subscribers where email='${email}'"`).toString().trim();
 
 async function step(name, fn) {
@@ -173,6 +185,102 @@ async function step(name, fn) {
     await page.getByLabel("الرابط").fill("http://127.0.0.1:8000/api/health");
     await page.getByRole("button", { name: "استورد المادة" }).click();
     await page.getByText("لا يمكن استيراد عنوان داخلي").waitFor();
+  });
+
+  await step("French source: parallel view shows the French original left-to-right", async () => {
+    await page.goto(BASE + "/search?q=" + encodeURIComponent("الردع الفرنسي"));
+    await page.getByRole("link", { name: "الردع الفرنسي في اختبار الحرب عالية الشدة" }).click();
+    await page.getByText("(بـالفرنسية)").waitFor();
+    await page.getByLabel("عرض الأصل الفرنسي بجوار الترجمة").check();
+    const col = page.locator(".para .en").first();
+    assert.equal(await col.getAttribute("lang"), "fr");
+    assert.equal(await col.getAttribute("dir"), "ltr");
+  });
+
+  await step("monthly trends: charts, table view and empty month", async () => {
+    await page.goto(BASE + "/trends");
+    await page.waitForURL(/\/trends\/\d{4}-\d{2}/);
+    assert.ok(await page.locator(".bar-row").count() >= 5);
+    await page.locator(".chart-table summary").first().click();
+    await page.locator(".chart-table table").first().waitFor();
+    await page.goto(BASE + "/trends/2020-01");
+    await page.getByText("لم نرصد مواد منشورة في هذا الشهر").waitFor();
+  });
+
+  const reader = `account${Date.now()}@example.org`;
+  await step("reader signs in by email link, saves an item, sets alerts and deletes the account", async () => {
+    await page.goto(BASE + "/account");
+    await page.waitForURL(/\/account\/login/);
+    await page.getByLabel("بريدك الإلكتروني").fill(reader);
+    await page.getByRole("button", { name: "أرسل رابط الدخول" }).click();
+    await page.getByText("سيصلك رابط الدخول").waitFor();
+    const link = lastMailTo(reader).text.match(/https?:\/\/\S+\/account\/verify\?token=\S+/)[0];
+    const verifyUrl = BASE + link.slice(link.indexOf("/account/verify"));
+    await page.goto(verifyUrl);
+    await page.getByRole("button", { name: "ادخل إلى حسابي" }).click();
+    await page.waitForURL(BASE + "/account");
+    await page.goto(verifyUrl); // the same link a second time is refused
+    await page.getByRole("button", { name: "ادخل إلى حسابي" }).click();
+    await page.getByText("استُخدم من قبل").waitFor();
+
+    await page.goto(BASE + fullUrl);
+    await page.getByRole("button", { name: "احفظ في مكتبتي" }).click();
+    await page.getByRole("button", { name: "محفوظة في مكتبتك" }).waitFor();
+    await page.goto(BASE + "/account");
+    await page.getByRole("link", { name: FULL }).waitFor();
+    await page.getByLabel("أرسل إليّ النشرة الأسبوعية بالمواد التي تطابق اختياري").check();
+    await page.getByRole("button", { name: "حفظ إعدادات التنبيه" }).click();
+    await page.getByText("حُفظت إعدادات التنبيه").waitFor();
+    await page.getByText("حذف الحساب", { exact: true }).click();
+    await page.getByRole("button", { name: "احذف حسابي وبياناتي" }).click();
+    await page.waitForURL(/account=deleted/);
+    assert.equal(DB_TOKEN(reader), ""); // newsletter row removed with the account
+  });
+
+  await step("editor builds and publishes a dossier (model draft must be reviewed first)", async () => {
+    await page.goto(BASE + "/editor/dossiers");
+    await page.getByPlaceholder("عنوان ملف جديد").fill(`ملف اختبار ${Date.now()}`);
+    await page.getByRole("button", { name: "أنشئ الملف" }).click();
+    await page.waitForURL(/\/editor\/dossiers\/\d+/);
+    await page.getByPlaceholder("كلمات البحث (اختيارية)").fill("الاستخبارات");
+    await page.getByRole("button", { name: "اقترح", exact: true }).click();
+    await page.getByRole("button", { name: "أضف", exact: true }).first().click();
+    await page.getByRole("button", { name: "حفظ", exact: true }).click();
+    await page.getByText("حُفظ الملف").waitFor();
+    // With one saved item, suggestions also come from closeness to the dossier itself.
+    await page.getByPlaceholder("كلمات البحث (اختيارية)").fill("");
+    await page.getByRole("button", { name: "اقترح", exact: true }).click();
+    await page.getByRole("button", { name: "أضف", exact: true }).first().click();
+    await page.getByRole("button", { name: "حفظ", exact: true }).click();
+    await page.waitForFunction(() => document.querySelectorAll("ol li strong").length === 2);
+    await page.getByRole("button", { name: "اقترح مقدمة من ملخصات المواد" }).click();
+    await page.getByText("كُتبت مقدمة مقترحة").waitFor();
+    await page.getByRole("button", { name: "نشر الملف" }).click();
+    await page.getByText("راجعها واحفظها قبل النشر").waitFor();
+    await page.getByLabel(/المقدمة/).fill("مقدمة راجعها المحرر في الاختبار الآلي.");
+    await page.getByRole("button", { name: "حفظ", exact: true }).click();
+    await page.getByText("حُفظ الملف").waitFor();
+    await page.getByRole("button", { name: "نشر الملف" }).click();
+    await page.getByText("نُشر الملف").waitFor();
+    await page.goto(BASE + "/dossiers");
+    await page.getByRole("link", { name: /ملف اختبار/ }).first().click();
+    await page.getByText("مقدمة راجعها المحرر في الاختبار الآلي.").waitFor();
+  });
+
+  await step("admin issues an API key that works once copied, and revokes it", async () => {
+    await page.goto(BASE + "/editor/api-clients");
+    await page.getByLabel("اسم الجهة").fill("جهة اختبار");
+    await page.getByRole("button", { name: "أصدر المفتاح" }).click();
+    const key = (await page.locator(".key-once").innerText()).trim();
+    assert.match(key, /^mrsd_/);
+    const ok = await page.request.get(`${ENGINE}/v1/articles?per_page=1`, { headers: { "X-API-Key": key } });
+    assert.equal(ok.status(), 200);
+    await page.reload();
+    assert.equal(await page.locator(".key-once").count(), 0); // shown once only
+    await page.getByRole("row", { name: /جهة اختبار/ }).first().getByRole("button", { name: "إيقاف المفتاح" }).click();
+    await page.waitForLoadState("networkidle");
+    const revoked = await page.request.get(`${ENGINE}/v1/articles`, { headers: { "X-API-Key": key } });
+    assert.equal(revoked.status(), 401);
   });
 
   await browser.close();

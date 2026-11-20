@@ -134,3 +134,11 @@ def test_subscribe_without_mailer_is_unavailable(db, session_factory, settings):
     api = TestClient(create_app(settings=settings, factory=session_factory, llm=FakeLLM(demo_handler),
                                 embedder=None, mailer=None))
     assert api.post("/api/subscribe", json={"email": "x@example.org"}).status_code == 503
+
+
+def test_fake_mailer_outbox(tmp_path):
+    import json
+    m = FakeMailer(outbox_dir=str(tmp_path))
+    m.send("a@example.org", "subject", "<p>x</p>", "x")
+    files = list(tmp_path.glob("*.json"))
+    assert len(files) == 1 and json.loads(files[0].read_text())["to"] == "a@example.org"

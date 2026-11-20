@@ -17,3 +17,13 @@ export function readingMinutes(words: number): number {
 
 export const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME ?? "مرصد";
 export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+
+const monthFmt = new Intl.DateTimeFormat("ar-u-nu-latn", { month: "long", year: "numeric", timeZone: "UTC" });
+
+export function arMonth(month: string): string {
+  const [y, m] = month.split("-").map(Number);
+  return monthFmt.format(new Date(Date.UTC(y, m - 1, 1)));
+}
+
+export const LANG_AR: Record<string, string> = { en: "الإنجليزية", fr: "الفرنسية", ru: "الروسية", he: "العبرية", zh: "الصينية", de: "الألمانية", es: "الإسبانية", ar: "العربية" };
+export const RTL_LANGS = new Set(["ar", "he"]);

@@ -29,6 +29,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <a href="/methodology">المنهجية وسياسة الحقوق</a>
               <a href="/subscribe">النشرة الأسبوعية</a>
               <a href="/feed.xml">خلاصة RSS</a>
+              <a href="/developers">الواجهة البرمجية</a>
               <a href="/editor">غرفة التحرير</a>
             </nav>
           </div>

@@ -5,7 +5,10 @@ import { Ar } from "./Ar";
 
 type Para = { en: string; ar: string };
 
-export function Body({ docId, body }: { docId: number; body: Para[] }) {
+const LANG_NAMES: Record<string, string> = { en: "الإنجليزي", fr: "الفرنسي", ru: "الروسي", he: "العبري", zh: "الصيني", de: "الألماني", es: "الإسباني" };
+
+export function Body({ docId, body, lang = "en" }: { docId: number; body: Para[]; lang?: string }) {
+  const dir = lang === "he" || lang === "ar" ? "rtl" : "ltr";
   const [parallel, setParallel] = useState(false);
   const [reporting, setReporting] = useState<number | null>(null);
   return (
@@ -14,7 +17,7 @@ export function Body({ docId, body }: { docId: number; body: Para[] }) {
         <h2 id="body-title">النص الكامل مترجماً</h2>
         <label className="toggle">
           <input type="checkbox" checked={parallel} onChange={(e) => setParallel(e.target.checked)} />
-          عرض الأصل الإنجليزي بجوار الترجمة
+          عرض الأصل {LANG_NAMES[lang] ?? ""} بجوار الترجمة
         </label>
       </div>
       {body.map((p, i) => (
@@ -28,7 +31,7 @@ export function Body({ docId, body }: { docId: number; body: Para[] }) {
             </button>
             {reporting === i && <FeedbackForm docId={docId} paragraph={i} />}
           </div>
-          {parallel && <div className="en" lang="en" dir="ltr"><p>{p.en}</p></div>}
+          {parallel && <div className="en" lang={lang} dir={dir}><p>{p.en}</p></div>}
         </div>
       ))}
     </section>

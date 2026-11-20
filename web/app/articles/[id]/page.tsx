@@ -5,6 +5,10 @@ import { ApiError, api } from "@/lib/api";
 import { arDate, authorsLine, readingMinutes, SITE_NAME } from "@/lib/format";
 import { ArticleList, Badges, journalLine } from "@/components/ArticleList";
 import { CitationBox } from "@/components/CopyBox";
+import { SaveButton } from "@/components/AccountForms";
+import { readerFetch } from "@/lib/reader";
+import type { AccountMe } from "@/lib/types";
+import { LANG_AR, RTL_LANGS } from "@/lib/format";
 import { Body, FeedbackForm } from "@/components/Body";
 import { Ar } from "@/components/Ar";
 
@@ -32,7 +36,11 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 export default async function ArticlePage({ params }: { params: Promise<{ id: string }> }) {
   const a = await load((await params).id);
-  const related = await api.related(a.id).catch(() => ({ items: [], basis: "tags" as const }));
+  const [related, me] = await Promise.all([
+    api.related(a.id).catch(() => ({ items: [], basis: "tags" as const })),
+    readerFetch<AccountMe>("/api/account/me"),
+  ]);
+  const srcDir = RTL_LANGS.has(a.source_language) ? "rtl" : "ltr";
   const s = a.summary;
   const jsonLd = {
     "@context": "https://schema.org",
@@ -54,7 +62,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ id: st
       <header className="article-head">
         <div className="ui"><Link href={`/sources/${a.source.slug}`}>{a.source.name_ar}</Link></div>
         <h1>{a.title_ar}</h1>
-        <bdi className="title-en" lang="en" dir="ltr">{a.title_en}</bdi>
+        <bdi className="title-en" lang={a.source_language} dir={srcDir}>{a.title_en}</bdi>
         <div className="byline">
           {a.authors_detail.length > 0 && (
             <span>تأليف{" "}
@@ -71,9 +79,12 @@ export default async function ArticlePage({ params }: { params: Promise<{ id: st
         </div>
         <Badges a={a} />
         {a.dek_ar && <p className="dek-lg"><Ar text={a.dek_ar} /></p>}
-        <a className="origin-link" href={a.meta.doi ? `https://doi.org/${a.meta.doi}` : a.url} rel="noopener" target="_blank">
-          اقرأ النص الأصلي لدى {a.source.name_ar}
-        </a>
+        <div className="badges" style={{ alignItems: "center", marginTop: "1rem" }}>
+          <a className="origin-link" style={{ marginTop: 0 }} href={a.meta.doi ? `https://doi.org/${a.meta.doi}` : a.url} rel="noopener" target="_blank">
+            اقرأ النص الأصلي لدى {a.source.name_ar}{a.source_language !== "en" && <> (بـ{LANG_AR[a.source_language] ?? a.source_language})</>}
+          </a>
+          <SaveButton docId={a.id} initial={!!me.data?.saved_ids.includes(a.id)} signedIn={me.status === 200} />
+        </div>
         {a.meta.doi && <div className="ui muted">المعرّف الرقمي <bdi className="latin" dir="ltr">doi:{a.meta.doi}</bdi></div>}
       </header>
 
@@ -104,7 +115,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ id: st
         </>}
       </section>}
 
-      {a.body ? <Body docId={a.id} body={a.body} /> : (
+      {a.body ? <Body docId={a.id} body={a.body} lang={a.source_language} /> : (
         <section className="prose">
           <p className="notice"><Ar text={a.rights_note} /></p>
           <details>
