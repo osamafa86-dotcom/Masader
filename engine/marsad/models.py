@@ -192,9 +192,11 @@ class DocumentTag(Base):
 
 class GlossaryTerm(Base):
     __tablename__ = "glossary_terms"
+    __table_args__ = (UniqueConstraint("lang", "term_en", name="uq_glossary_lang_term"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    term_en: Mapped[str] = mapped_column(String(200), unique=True)
+    lang: Mapped[str] = mapped_column(String(8), default="en", server_default="en")  # language of the source term
+    term_en: Mapped[str] = mapped_column(String(200))  # the source-language term (English for most entries)
     term_ar: Mapped[str] = mapped_column(String(200))
     variants_ar: Mapped[list] = mapped_column(JSONB, default=list)
     definition_ar: Mapped[str] = mapped_column(Text, default="")
@@ -336,3 +338,107 @@ class DigestDelivery(Base):
     item_count: Mapped[int] = mapped_column(Integer, default=0)
     error: Mapped[str | None] = mapped_column(Text)
     sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+# ---------------------------------------------------------------- phase 3
+class ApiClient(Base):
+    __tablename__ = "api_clients"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(200))
+    organization: Mapped[str] = mapped_column(String(200), default="")
+    contact_email: Mapped[str] = mapped_column(String(320), default="")
+    key_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    key_prefix: Mapped[str] = mapped_column(String(16))
+    rate_limit_per_minute: Mapped[int] = mapped_column(Integer, default=60)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class ApiUsage(Base):
+    """One row per client per minute: the rate-limit counter, and the usage history."""
+
+    __tablename__ = "api_usage"
+
+    client_id: Mapped[int] = mapped_column(ForeignKey("api_clients.id", ondelete="CASCADE"), primary_key=True)
+    window_start: Mapped[datetime] = mapped_column(DateTime(timezone=True), primary_key=True)
+    count: Mapped[int] = mapped_column(Integer, default=0)
+
+
+class Dossier(Base):
+    __tablename__ = "dossiers"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    slug: Mapped[str] = mapped_column(String(120), unique=True)
+    title_ar: Mapped[str] = mapped_column(String(300))
+    intro_ar: Mapped[str] = mapped_column(Text, default="")
+    intro_is_draft: Mapped[bool] = mapped_column(Boolean, default=False)
+    status: Mapped[str] = mapped_column(String(16), default="draft")  # draft | published
+    created_by: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+    items: Mapped[list["DossierItem"]] = relationship(cascade="all, delete-orphan", order_by="DossierItem.position")
+
+
+class DossierItem(Base):
+    __tablename__ = "dossier_items"
+
+    dossier_id: Mapped[int] = mapped_column(ForeignKey("dossiers.id", ondelete="CASCADE"), primary_key=True)
+    document_id: Mapped[int] = mapped_column(ForeignKey("documents.id", ondelete="CASCADE"), primary_key=True)
+    position: Mapped[int] = mapped_column(Integer, default=0)
+    note_ar: Mapped[str] = mapped_column(Text, default="")
+
+    document: Mapped[Document] = relationship()
+
+
+class TrendReport(Base):
+    __tablename__ = "trend_reports"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    month: Mapped[str] = mapped_column(String(7), unique=True)  # YYYY-MM
+    stats: Mapped[dict] = mapped_column(JSONB, default=dict)  # frozen snapshot used for the narrative
+    narrative_ar: Mapped[str] = mapped_column(Text, default="")
+    narrative_is_draft: Mapped[bool] = mapped_column(Boolean, default=True)
+    status: Mapped[str] = mapped_column(String(16), default="draft")  # draft | published
+    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class Reader(Base):
+    __tablename__ = "readers"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    email: Mapped[str] = mapped_column(String(320), unique=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class ReaderLoginToken(Base):
+    __tablename__ = "reader_login_tokens"
+
+    token_hash: Mapped[str] = mapped_column(String(64), primary_key=True)
+    email: Mapped[str] = mapped_column(String(320))
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
+
+
+class ReaderSession(Base):
+    __tablename__ = "reader_sessions"
+
+    token_hash: Mapped[str] = mapped_column(String(64), primary_key=True)
+    reader_id: Mapped[int] = mapped_column(ForeignKey("readers.id", ondelete="CASCADE"))
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+    reader: Mapped[Reader] = relationship()
+
+
+class SavedItem(Base):
+    __tablename__ = "saved_items"
+
+    reader_id: Mapped[int] = mapped_column(ForeignKey("readers.id", ondelete="CASCADE"), primary_key=True)
+    document_id: Mapped[int] = mapped_column(ForeignKey("documents.id", ondelete="CASCADE"), primary_key=True)
+    note: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
