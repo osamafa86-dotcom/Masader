@@ -51,6 +51,10 @@ class Settings(BaseSettings):
     mail_batch: int = 50
     fake_mail_dir: str = ""  # with mail_backend=fake: write outgoing mail here for local development
 
+    # Quality evaluation
+    golden_dir: str = "./golden"  # editor-reviewed references added with `marsad eval add`
+    eval_runs_dir: str = "./eval_runs"
+
     # Editorial policy
     review_min_importance: int = 3
     auto_publish: bool = False

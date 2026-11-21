@@ -12,6 +12,8 @@ from marsad.db import session_factory, session_scope
 app = typer.Typer(help="Marsad engine commands", no_args_is_help=True)
 sources_app = typer.Typer(help="Inspect and verify sources", no_args_is_help=True)
 app.add_typer(sources_app, name="sources")
+eval_app = typer.Typer(help="Translation quality evaluation against the golden set", no_args_is_help=True)
+app.add_typer(eval_app, name="eval")
 
 
 def _logging(verbose: bool = False) -> None:
@@ -185,6 +187,65 @@ def demo(publish: bool = True):
         seed_all(s)
         ids = load_demo(s, get_settings(), publish_items=publish)
     typer.echo(f"demo documents: {ids}")
+
+
+@eval_app.command("run")
+def eval_run(label: str = typer.Option("", help="name for this run, e.g. the change being tested"),
+             model: str = typer.Option(None, help="override MARSAD_MODEL_TRANSLATE for this run"),
+             effort: str = typer.Option(None), judge: bool = typer.Option(False, help="also run the model judge"),
+             limit: int = typer.Option(0, help="evaluate only the first N items")):
+    """Translate every golden item with the current settings and score it against the human reference."""
+    import json
+    from pathlib import Path
+
+    from marsad.eval.golden import load_golden, run_eval
+    from marsad.worker import make_llm
+
+    settings = get_settings()
+    updates = {k: v for k, v in (("model_translate", model), ("effort_translate", effort)) if v}
+    settings = settings.model_copy(update=updates)
+    items = load_golden(settings.golden_dir)
+    if limit:
+        items = items[:limit]
+    with session_scope() as s:
+        report = run_eval(s, make_llm(settings), settings, items, judge=judge, label=label)
+    out = Path(settings.eval_runs_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    path = out / f"{report['run_at'].replace(':', '')}.json"
+    path.write_text(json.dumps(report, ensure_ascii=False, indent=1), encoding="utf-8")
+    sm = report["summary"]
+    typer.echo(f"{sm['complete']}/{sm['items']} complete  chrF {sm['chrf_mean']}  QA {sm['qa_score_mean']}  "
+               f"high {sm['high_issues']}  terms {sm['terminology_issues']}  numbers {sm['number_issues']}  "
+               f"${sm['cost_usd']}")
+    for r in report["results"]:
+        typer.echo(f"  {r['id']:28} {r['language']}  chrF {r.get('chrf', 0):6}  QA {r.get('qa_score', '-')}")
+    typer.echo(f"saved {path}")
+
+
+@eval_app.command("compare")
+def eval_compare(before: str, after: str):
+    """Compare two saved runs (paths to their JSON files)."""
+    import json
+    from pathlib import Path
+
+    from marsad.eval.golden import compare
+
+    a, b = (json.loads(Path(p).read_text(encoding="utf-8")) for p in (before, after))
+    for key, x, y, d in compare(a, b):
+        typer.echo(f"{key:20} {x:>10} -> {y:>10}  ({'+' if d > 0 else ''}{d})")
+
+
+@eval_app.command("add")
+def eval_add(document_id: int):
+    """Add an editor-reviewed published translation to the golden set."""
+    from marsad.eval.golden import add_from_document
+    from marsad.models import Document
+
+    with session_scope() as s:
+        doc = s.get(Document, document_id)
+        if doc is None:
+            raise typer.BadParameter("unknown document")
+        typer.echo(f"added {add_from_document(doc, get_settings().golden_dir)}")
 
 
 if __name__ == "__main__":
