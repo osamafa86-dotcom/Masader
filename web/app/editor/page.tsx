@@ -26,6 +26,12 @@ export default async function EditorHome({ searchParams }: { searchParams: Promi
   return (
     <div className="with-rail">
       <section>
+        {stats.worker.stale && (
+          <p className="notice error" role="alert">
+            {stats.worker.last_seen ? `توقف العامل عن العمل منذ ${arDate(stats.worker.last_seen)}: لا رصد ولا ترجمة الآن.` : "لم يبدأ العامل بعد: لا رصد ولا ترجمة حتى يعمل."}
+          </p>
+        )}
+        {stats.problems.filter((p) => !p.startsWith("آخر دورة للعامل")).map((p, i) => <p key={i} className="notice">{p}</p>)}
         <h1 className="page-title">{TABS.find(([k]) => k === stage)?.[1] ?? "صف المراجعة"}</h1>
         <nav className="nav" aria-label="المراحل" style={{ margin: "1rem 0 1.5rem" }}>
           {TABS.map(([k, label]) => (

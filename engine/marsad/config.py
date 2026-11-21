@@ -65,6 +65,11 @@ class Settings(BaseSettings):
     auto_publish: bool = False
     max_quote_words: int = 150
 
+    # Monitoring
+    alert_emails: str = ""  # comma-separated; alerts are emailed here
+    worker_stale_minutes: int = 10
+    sentry_dsn: str = ""
+
     # Worker
     worker_interval_s: int = 60
     worker_batch: int = 5

@@ -117,6 +117,8 @@ export type QueueRow = {
 };
 
 export type Stats = {
+  worker: { last_seen: string | null; stale: boolean; last_cycle: Record<string, number> };
+  problems: string[];
   stages: Record<string, number>;
   spent_today_usd: number;
   daily_budget_usd: number;

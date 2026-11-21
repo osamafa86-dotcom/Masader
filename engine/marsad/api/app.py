@@ -43,5 +43,8 @@ def create_app(settings: Settings | None = None, factory: sessionmaker | None = 
 
 
 def app_factory() -> FastAPI:  # uvicorn --factory marsad.api.app:app_factory
+    from marsad.monitoring import init_sentry
+
     logging.basicConfig(level=logging.INFO)
+    init_sentry(get_settings(), "api")
     return create_app()

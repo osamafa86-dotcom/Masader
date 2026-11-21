@@ -45,9 +45,18 @@ def _has_tag(kind: str, slug: str):
 
 
 @router.get("/health")
-def health(db: Session = Depends(get_db)):
+def health(strict: bool = False, db: Session = Depends(get_db), settings=Depends(get_settings_dep)):
+    """`?strict=1` for uptime monitors: 503 when the worker has stopped cycling."""
+    from fastapi.responses import JSONResponse
+
+    from marsad.monitoring import worker_status
+
     db.execute(text("select 1"))
-    return {"ok": True}
+    if not strict:
+        return {"ok": True}
+    worker = worker_status(db, settings)
+    body = {"ok": not worker["stale"], "worker": worker}
+    return JSONResponse(body, status_code=200 if body["ok"] else 503)
 
 
 @router.get("/articles")

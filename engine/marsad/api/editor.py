@@ -167,7 +167,11 @@ def stats(user: User = Depends(current_user), db: Session = Depends(get_db), set
     sources = db.scalars(select(Source).where(Source.is_active).order_by(Source.name)).all()
     open_feedback = db.scalar(select(func.count()).select_from(Feedback).where(Feedback.resolved.is_(False)))
     proposed = db.scalar(select(func.count()).select_from(GlossaryTerm).where(GlossaryTerm.status == "proposed"))
+    from marsad.monitoring import find_problems, worker_status
+
     return {
+        "worker": worker_status(db, settings),
+        "problems": [text for _, text in find_problems(db, settings)],
         "stages": {s.value: by_stage.get(s, 0) for s in Stage},
         "spent_today_usd": round(spent_today(db), 4),
         "daily_budget_usd": settings.daily_budget_usd,

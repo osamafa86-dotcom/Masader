@@ -10,6 +10,7 @@ from marsad.config import Settings
 from marsad.embed import embed_pending, make_embedder
 from marsad.newsletter.mailer import make_mailer
 from marsad.newsletter.service import deliver_pending, ensure_weekly_draft
+from marsad.monitoring import heartbeat, init_sentry, send_alerts
 from marsad.trends import ensure_previous_month_draft
 from marsad.fetch.http import PoliteClient
 from marsad.fetch.run import due_sources, fetch_source
@@ -84,12 +85,16 @@ def run_once(factory: sessionmaker[Session], llm: LLM, client: PoliteClient, set
             counts["digest_draft"] = 1
         if mailer is not None:
             counts["emails"] = deliver_pending(session, mailer, settings, settings.mail_batch)
+    with factory() as session:
+        heartbeat(session, counts)
+        counts["alerts"] = send_alerts(session, mailer, settings)
     return counts
 
 
 def run_forever(factory: sessionmaker[Session], settings: Settings) -> None:
     llm, client, embedder = make_llm(settings), PoliteClient(settings), make_embedder(settings)
     mailer = make_mailer(settings)
+    init_sentry(settings, "worker")
     log.info("worker started (llm=%s, interval=%ss)", settings.llm_backend, settings.worker_interval_s)
     while True:
         try:
