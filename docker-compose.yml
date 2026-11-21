@@ -41,6 +41,10 @@ services:
   worker:
     <<: *engine
     command: ["marsad", "worker"]
+    healthcheck:
+      test: ["CMD", "marsad", "health"]
+      interval: 2m
+      start_period: 5m
     depends_on:
       migrate: { condition: service_completed_successfully }
 

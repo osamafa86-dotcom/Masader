@@ -155,6 +155,18 @@ def worker(once: bool = typer.Option(False, help="run a single cycle and exit"),
 
 
 @app.command()
+def health(strict: bool = typer.Option(True, help="fail when the worker heartbeat is stale")):
+    """Exit 0 when the database answers and (with --strict) the worker cycled recently. Used by Docker healthchecks."""
+    from marsad.monitoring import worker_status
+
+    with session_scope() as s:
+        status = worker_status(s, get_settings())
+    typer.echo(f"worker last seen: {status['last_seen']}")
+    if strict and status["stale"]:
+        raise typer.Exit(1)
+
+
+@app.command()
 def embed():
     """Embed every published document that has no vector yet (backfill after enabling semantic search)."""
     from marsad.embed import embed_pending, make_embedder

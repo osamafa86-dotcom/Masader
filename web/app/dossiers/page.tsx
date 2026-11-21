@@ -2,7 +2,7 @@ import Link from "next/link";
 import { api } from "@/lib/api";
 import { arDate } from "@/lib/format";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 export const metadata = { title: "الملفات الموضوعية" };
 
 export default async function DossiersPage() {
