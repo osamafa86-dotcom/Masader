@@ -12,13 +12,26 @@ services:
   caddy:
     profiles: ["standalone"]
 
+  # Ceilings so the stack cannot starve the other sites on a shared server
+  # (about 3 GB at most in total; normal use is well under half of that).
+  db:
+    mem_limit: 768m
+  migrate:
+    mem_limit: 512m
+  worker:
+    mem_limit: 1g
+  backup:
+    mem_limit: 256m
+
   web:
+    mem_limit: 512m
     networks:
       default:
       web:
         aliases: [masader-web]
 
   api:
+    mem_limit: 512m
     networks:
       default:
       web:
