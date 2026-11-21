@@ -6,6 +6,7 @@ import { arDate, authorsLine, readingMinutes, SITE_NAME } from "@/lib/format";
 import { ArticleList, Badges, journalLine } from "@/components/ArticleList";
 import { CitationBox } from "@/components/CopyBox";
 import { SaveButton } from "@/components/AccountForms";
+import { ViewBeacon } from "@/components/ViewBeacon";
 import { readerFetch } from "@/lib/reader";
 import type { AccountMe } from "@/lib/types";
 import { LANG_AR, RTL_LANGS } from "@/lib/format";
@@ -59,6 +60,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ id: st
   return (
     <article>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <ViewBeacon docId={a.id} />
       <header className="article-head">
         <div className="ui"><Link href={`/sources/${a.source.slug}`}>{a.source.name_ar}</Link></div>
         <h1>{a.title_ar}</h1>

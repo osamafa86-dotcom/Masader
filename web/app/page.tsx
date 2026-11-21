@@ -6,7 +6,9 @@ export const revalidate = 60;
 
 export default async function Home({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
   const page = Number((await searchParams).page ?? 1) || 1;
-  const [articles, topics, sources] = await Promise.all([api.articles({ page }), api.topics(), api.sources()]);
+  const [articles, topics, sources, mostRead] = await Promise.all([
+    api.articles({ page }), api.topics(), api.sources(), api.mostRead().catch(() => []),
+  ]);
   const active = sources.filter((s) => s.is_active);
   return (
     <div className="with-rail">
@@ -24,6 +26,14 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
           <p>مختارات أسبوعية يراجعها المحررون، بحسب الموضوعات التي تختارها.</p>
           <Link className="btn accent" href="/subscribe">اشترك في النشرة</Link>
         </section>
+        {mostRead.length > 0 && (
+          <section>
+            <h2>الأكثر قراءة هذا الأسبوع</h2>
+            <ol className="ui" style={{ paddingInlineStart: "1.2rem", lineHeight: 1.9 }}>
+              {mostRead.map((a) => <li key={a.id}><Link href={`/articles/${a.id}`}>{a.title_ar}</Link></li>)}
+            </ol>
+          </section>
+        )}
         <section>
           <h2>المصادر المرصودة</h2>
           <ul>

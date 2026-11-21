@@ -1,6 +1,6 @@
 """Public read API used by the website."""
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session, selectinload
@@ -257,6 +257,48 @@ def glossary(q: str | None = Query(None, max_length=100), lang: str | None = Que
                 or any(needle_ar in normalize_ar(v) for v in r.variants_ar or [])]
     return [{"en": r.term_en, "lang": r.lang, "ar": r.term_ar, "variants_ar": r.variants_ar,
              "definition_ar": r.definition_ar, "domain": r.domain} for r in rows]
+
+
+BOT = __import__("re").compile(r"bot|crawl|spider|slurp|preview|monitor|curl|wget|python-|headless", __import__("re").I)
+
+
+class ViewIn(BaseModel):
+    document_id: int
+
+
+@router.post("/views", status_code=204, dependencies=[Depends(limited("views", 120, 60))])
+def count_view(body: ViewIn, request: Request, db: Session = Depends(get_db)):
+    """Increments today's counter for a published item. Nothing about the reader is stored."""
+    from datetime import date
+
+    from sqlalchemy.dialects.postgresql import insert
+
+    from marsad.models import PageView
+
+    if BOT.search(request.headers.get("x-client-ua", "") or request.headers.get("user-agent", "")):
+        return None
+    if db.scalar(select(Document.id).where(Document.id == body.document_id, Document.stage == Stage.published)) is None:
+        return None
+    stmt = insert(PageView).values(document_id=body.document_id, day=date.today(), count=1)
+    db.execute(stmt.on_conflict_do_update(index_elements=[PageView.document_id, PageView.day],
+                                          set_={"count": PageView.count + 1}))
+    db.commit()
+    return None
+
+
+@router.get("/most-read")
+def most_read(days: int = Query(7, ge=1, le=90), limit: int = Query(5, ge=1, le=20), db: Session = Depends(get_db)):
+    from datetime import date, timedelta
+
+    from marsad.models import PageView
+
+    total = func.sum(PageView.count)
+    rows = db.execute(select(PageView.document_id, total).where(PageView.day > date.today() - timedelta(days=days))
+                      .group_by(PageView.document_id).order_by(total.desc()).limit(limit * 2)).all()
+    views = dict(rows)
+    docs = {d.id: d for d in db.scalars(published().where(Document.id.in_(list(views) or [0]))).unique().all()}
+    ranked = [i for i, _ in rows if i in docs][:limit]
+    return [{**article_card(docs[i]), "views": int(views[i])} for i in ranked]
 
 
 class FeedbackIn(BaseModel):

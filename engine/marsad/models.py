@@ -1,10 +1,11 @@
 """Database schema. See docs/strategy-plan-ar.md section 6."""
 
 import enum
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 from sqlalchemy import (
     Boolean,
+    Date,
     Computed,
     DateTime,
     Enum,
@@ -503,3 +504,13 @@ class SystemState(Base):
     key: Mapped[str] = mapped_column(String(100), primary_key=True)
     value: Mapped[dict] = mapped_column(JSONB, default=dict)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class PageView(Base):
+    """Readership count: item, day, number. No address, cookie or browser data is stored."""
+
+    __tablename__ = "page_views"
+
+    document_id: Mapped[int] = mapped_column(ForeignKey("documents.id", ondelete="CASCADE"), primary_key=True)
+    day: Mapped[date] = mapped_column(Date, primary_key=True)
+    count: Mapped[int] = mapped_column(Integer, default=0)

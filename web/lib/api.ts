@@ -27,6 +27,7 @@ export const api = {
   topics: () => get<Topics>("/api/topics"),
   search: (q: string, page = 1, mode: "keyword" | "semantic" = "keyword") => get<SearchPage>("/api/search", { q, page, mode }),
   dossiers: () => get<DossierCard[]>("/api/dossiers"),
+  mostRead: () => get<(ArticleCard & { views: number })[]>("/api/most-read"),
   dossier: (slug: string) => get<DossierPage>(`/api/dossiers/${encodeURIComponent(slug)}`),
   trendMonths: () => get<{ month: string; report: boolean }[]>("/api/trends/months"),
   trend: (month: string) => get<TrendStats>(`/api/trends/${encodeURIComponent(month)}`),
