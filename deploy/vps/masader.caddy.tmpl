@@ -1,0 +1,18 @@
+# «مصادر» on the shared Caddy. __SITE_DOMAIN__ is filled in by install.sh.
+__SITE_DOMAIN__ {
+	encode zstd gzip
+	# Public API for institutions (keys and rate limits enforced by the engine).
+	handle /v1/* {
+		reverse_proxy masader-api:8000
+	}
+	# Everything else is the website. The engine's internal /api stays private.
+	handle {
+		reverse_proxy masader-web:3000
+	}
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+}

@@ -1,0 +1,30 @@
+# Overlay for a server that already runs a shared Caddy (the feedsnews VPS).
+#
+#   docker compose -f docker-compose.yml -f deploy/vps/docker-compose.vps.yml up -d --build
+#
+# What it changes from the standalone stack:
+#   - the bundled Caddy is switched off: ports 80/443 belong to the shared one;
+#   - web and api also join the shared Caddy network (deploy_default) under
+#     explicit names, so the site block in masader.caddy can reach them.
+# Nothing else is exposed: the database stays on the stack's private network.
+
+services:
+  caddy:
+    profiles: ["standalone"]
+
+  web:
+    networks:
+      default:
+      web:
+        aliases: [masader-web]
+
+  api:
+    networks:
+      default:
+      web:
+        aliases: [masader-api]
+
+networks:
+  web:
+    name: ${SHARED_CADDY_NETWORK:-deploy_default}
+    external: true
