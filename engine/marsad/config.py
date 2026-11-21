@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     storage_dir: str = "./storage"
 
     # Site policy
-    site_name: str = "مرصد"
+    site_name: str = "مصادر"
     site_url: str = "http://localhost:3000"
     site_commercial: bool = False
     contact_email: str = "editor@example.org"
@@ -47,7 +47,7 @@ class Settings(BaseSettings):
     smtp_user: str = ""
     smtp_password: str = ""
     smtp_starttls: bool = True
-    smtp_from: str = "مرصد <newsletter@example.org>"
+    smtp_from: str = "مصادر <newsletter@example.org>"
     mail_batch: int = 50
     fake_mail_dir: str = ""  # with mail_backend=fake: write outgoing mail here for local development
 

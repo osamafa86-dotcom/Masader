@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { SITE_NAME } from "@/lib/format";
 
 const LINKS = [
   { href: "/", label: "الأحدث" },
@@ -18,7 +19,7 @@ export function Masthead() {
   return (
     <header className="masthead">
       <div className="wrap">
-        <Link href="/" className="wordmark">مرصد<small>الدراسات الاستراتيجية بالعربية</small></Link>
+        <Link href="/" className="wordmark">{SITE_NAME}<small>الدراسات الاستراتيجية بالعربية</small></Link>
         <nav className="nav" aria-label="الأقسام">
           {LINKS.map((l) => (
             <Link key={l.href} href={l.href} aria-current={(l.href === "/" ? path === "/" : path.startsWith(l.href)) ? "page" : undefined}>
@@ -28,7 +29,7 @@ export function Masthead() {
         </nav>
         <div className="mast-tools">
         <form className="search-box" action="/search" role="search">
-          <label htmlFor="q" className="skip-link">ابحث في المرصد</label>
+          <label htmlFor="q" className="skip-link">ابحث في الموقع</label>
           <input id="q" name="q" type="search" placeholder="ابحث بالعربية أو الإنجليزية" minLength={2} required />
           <button type="submit">بحث</button>
         </form>
@@ -43,7 +44,7 @@ function EditorBar() {
   return (
     <header className="masthead">
       <div className="wrap">
-        <Link href="/editor" className="wordmark">مرصد<small>غرفة التحرير</small></Link>
+        <Link href="/editor" className="wordmark">{SITE_NAME}<small>غرفة التحرير</small></Link>
         <nav className="nav" aria-label="أقسام التحرير">
           <Link href="/editor">صف المراجعة</Link>
           <Link href="/editor?stage=failed">المتعثرة</Link>

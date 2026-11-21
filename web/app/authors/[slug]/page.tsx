@@ -16,7 +16,7 @@ async function load(slug: string, page: number) {
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const a = await load((await params).slug, 1);
-  return { title: a.name, description: `ما رصده المرصد من أعمال ${a.name}` };
+  return { title: a.name, description: `أعمال ${a.name} المترجمة والملخصة بالعربية` };
 }
 
 export default async function AuthorPage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ page?: string }> }) {

@@ -140,7 +140,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ id: st
             <dt>طريقة الإعداد</dt>
             <dd>{a.human_reviewed ? "ترجمة آلية راجعها محرر متخصص" : "ترجمة آلية لم يراجعها محرر بعد"}</dd>
             {a.translation.reviewed_at && <><dt>تاريخ المراجعة</dt><dd>{arDate(a.translation.reviewed_at)}</dd></>}
-            {a.published_at && <><dt>نُشرت في المرصد</dt><dd>{arDate(a.published_at)}</dd></>}
+            {a.published_at && <><dt>نُشرت هنا في</dt><dd>{arDate(a.published_at)}</dd></>}
             <dt>المنهجية</dt><dd><Link href="/methodology">كيف نترجم ونراجع</Link></dd>
           </dl>
         </section>

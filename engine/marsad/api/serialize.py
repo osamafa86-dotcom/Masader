@@ -64,7 +64,7 @@ def citation(doc: Document) -> str:
     return f"{authors} ({year}). {doc.title_en}. {doc.source.name}. {doc.url}"
 
 
-def article_detail(doc: Document, glossary: list[GlossaryTerm], site_name: str = "مرصد",
+def article_detail(doc: Document, glossary: list[GlossaryTerm], site_name: str = "مصادر",
                    site_url: str = "") -> dict:
     tr = doc.translation
     level = effective_level(doc, tr)

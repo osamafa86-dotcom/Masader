@@ -15,7 +15,7 @@ export function readingMinutes(words: number): number {
   return Math.max(1, Math.round(words / 230));
 }
 
-export const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME ?? "مرصد";
+export const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME ?? "مصادر";
 export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
 const monthFmt = new Intl.DateTimeFormat("ar-u-nu-latn", { month: "long", year: "numeric", timeZone: "UTC" });

@@ -49,6 +49,7 @@ services:
       context: ./web
       args:
         NEXT_PUBLIC_SITE_URL: https://${SITE_DOMAIN}
+        NEXT_PUBLIC_SITE_NAME: ${NEXT_PUBLIC_SITE_NAME:-مصادر}
     restart: unless-stopped
     environment:
       ENGINE_URL: http://api:8000
