@@ -125,21 +125,46 @@ def chunk_ids(paragraphs: list[str], max_words: int) -> list[list[int]]:
     return [c for c in chunks if c]
 
 
-def _translate_ids(llm: LLM, doc: DocInput, ids: list[int], terms: list[Term], context_ar: str,
-                   settings: Settings) -> tuple[dict[int, str], list[dict], LLMResult]:
+def translation_request(doc: DocInput, ids: list[int], terms: list[Term], context_ar: str,
+                        settings: Settings) -> dict:
+    """The exact request used both synchronously and in batches."""
     chunk_text = "\n".join(doc.paragraphs[i] for i in ids)
     payload = {"title": doc.title, "context_summary_ar": context_ar, "source_language": doc.language,
                "glossary": as_prompt(relevant_terms(f"{doc.title}\n{chunk_text}", terms)),
                "paragraphs": [{"id": i, "en": doc.paragraphs[i]} for i in ids]}
     words = sum(_words(doc.paragraphs[i]) for i in ids)
-    res = llm.json(task="translate", model=settings.model_translate, system=prompts.TRANSLATE, user=_dump(payload),
-                   schema=schemas.TRANSLATION, max_tokens=min(64000, 4000 + words * 6),
-                   effort=settings.effort_translate)
+    return {"model": settings.model_translate, "system": prompts.TRANSLATE, "user": _dump(payload),
+            "schema": schemas.TRANSLATION, "max_tokens": min(64000, 4000 + words * 6), "effort": settings.effort_translate}
+
+
+def parse_translation(data: dict, ids: list[int]) -> tuple[dict[int, str], list[dict]]:
     wanted = set(ids)
-    got = {p["id"]: p["ar"].strip() for p in res.data.get("paragraphs", [])
+    got = {p["id"]: p["ar"].strip() for p in data.get("paragraphs", [])
            if p.get("id") in wanted and p.get("ar", "").strip()}
-    notes = [n for n in res.data.get("notes", []) if n.get("id") in wanted and n.get("note_ar")]
+    notes = [n for n in data.get("notes", []) if n.get("id") in wanted and n.get("note_ar")]
+    return got, notes
+
+
+def _translate_ids(llm: LLM, doc: DocInput, ids: list[int], terms: list[Term], context_ar: str,
+                   settings: Settings) -> tuple[dict[int, str], list[dict], LLMResult]:
+    res = llm.json(task="translate", **translation_request(doc, ids, terms, context_ar, settings))
+    got, notes = parse_translation(res.data, ids)
     return got, notes, res
+
+
+def complete_translation(llm: LLM, doc: DocInput, got: dict[int, str], notes: list[dict], terms: list[Term],
+                         settings: Settings, context_ar: str = "") -> TranslationResult:
+    """Fill in whatever is missing from partial (e.g. batch) results with one synchronous retry."""
+    calls: list[LLMResult] = []
+    missing = [i for i in range(len(doc.paragraphs)) if i not in got]
+    if missing:
+        retry, n2, res = _translate_ids(llm, doc, missing, terms, context_ar, settings)
+        calls.append(res)
+        got, notes = {**got, **retry}, notes + n2
+        still = [i for i in missing if i not in got]
+        if still:
+            raise TranslationIncomplete(still)
+    return TranslationResult(paragraphs=[got[i] for i in range(len(doc.paragraphs))], notes=notes, calls=calls)
 
 
 def translate_one(llm: LLM, doc: DocInput, index: int, terms: list[Term], settings: Settings,

@@ -14,7 +14,8 @@ from marsad.trends import ensure_previous_month_draft
 from marsad.fetch.http import PoliteClient
 from marsad.fetch.run import due_sources, fetch_source
 from marsad.models import Stage
-from marsad.pipeline import AI_STAGES, advance, claim_next, spent_today
+from marsad.batches import collect, submit_pending, supports_batches
+from marsad.pipeline import AI_STAGES, advance, claim_next, not_batched, spent_today
 from marsad.storage import LocalStorage
 
 log = logging.getLogger(__name__)
@@ -29,7 +30,7 @@ def make_llm(settings: Settings) -> LLM:
 
 
 def _drain(factory: sessionmaker[Session], stages: tuple[Stage, ...], limit: int, settings: Settings,
-           budget_check: bool, **deps) -> int:
+           budget_check: bool, extra=None, **deps) -> int:
     done = 0
     seen: set[int] = set()
     while done < limit:
@@ -37,7 +38,7 @@ def _drain(factory: sessionmaker[Session], stages: tuple[Stage, ...], limit: int
             if budget_check and spent_today(session) >= settings.daily_budget_usd:
                 log.warning("daily AI budget of $%.2f reached; AI stages paused", settings.daily_budget_usd)
                 return done
-            doc = claim_next(session, stages, exclude=seen)  # each document gets one step per round
+            doc = claim_next(session, stages, exclude=seen, extra=extra)  # one step per document per round
             if doc is None:
                 session.rollback()
                 return done
@@ -60,8 +61,18 @@ def run_once(factory: sessionmaker[Session], llm: LLM, client: PoliteClient, set
     deps = dict(llm=llm, client=client, storage=storage)
     counts["extracted"] = _drain(factory, (Stage.discovered,), settings.worker_batch * 4, settings, False, **deps)
     # Later stages first, so documents already in flight finish before new ones start.
+    use_batches = settings.batch_enabled and supports_batches(llm)
+    if use_batches:
+        with factory() as session:
+            counts["batch_collected"] = collect(session, llm, settings)
     for stage in reversed(AI_STAGES):
-        counts["ai_steps"] += _drain(factory, (stage,), settings.worker_batch, settings, True, **deps)
+        extra = not_batched(settings if use_batches else settings.model_copy(update={"batch_enabled": False})) \
+            if stage == Stage.summarized else None
+        counts["ai_steps"] += _drain(factory, (stage,), settings.worker_batch, settings, True, extra=extra, **deps)
+    if use_batches:
+        with factory() as session:
+            if spent_today(session) < settings.daily_budget_usd:
+                counts["batch_submitted"] = submit_pending(session, llm, settings)
     if embedder is not None:
         with factory() as session:
             counts["embedded"] = embed_pending(session, embedder)

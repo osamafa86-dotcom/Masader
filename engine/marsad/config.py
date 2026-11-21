@@ -32,6 +32,9 @@ class Settings(BaseSettings):
     effort_classify: str = "low"
     qa_llm_judge: bool = False
     chunk_words: int = 1800
+    batch_enabled: bool = True  # translate non-urgent items through Message Batches at half price
+    batch_max_importance: int = 3
+    batch_max_docs: int = 50
     daily_budget_usd: float = 15.0
 
     # Embeddings (semantic search, related items)

@@ -129,6 +129,7 @@ class Document(Base):
     keywords: Mapped[list] = mapped_column(JSONB, default=list)
     max_level: Mapped[PublishLevel] = mapped_column(_enum(PublishLevel, "publish_level"), default=PublishLevel.summary)
     meta: Mapped[dict] = mapped_column(JSONB, default=dict, server_default="{}")  # journal, volume, issue, pages, doi
+    in_batch_id: Mapped[int | None] = mapped_column(ForeignKey("ai_batches.id", ondelete="SET NULL"), index=True)
     item_license: Mapped[str | None] = mapped_column(String(64))
     item_rights_evidence: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
@@ -442,3 +443,25 @@ class SavedItem(Base):
     document_id: Mapped[int] = mapped_column(ForeignKey("documents.id", ondelete="CASCADE"), primary_key=True)
     note: Mapped[str] = mapped_column(Text, default="")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class AiBatch(Base):
+    """A Message Batches submission (half-price, asynchronous translation of non-urgent items)."""
+
+    __tablename__ = "ai_batches"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    provider_id: Mapped[str] = mapped_column(String(100), unique=True)
+    status: Mapped[str] = mapped_column(String(16), default="submitted")  # submitted | collected
+    request_count: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    collected_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class AiBatchRequest(Base):
+    __tablename__ = "ai_batch_requests"
+
+    custom_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    batch_id: Mapped[int] = mapped_column(ForeignKey("ai_batches.id", ondelete="CASCADE"), index=True)
+    document_id: Mapped[int] = mapped_column(ForeignKey("documents.id", ondelete="CASCADE"))
+    paragraph_ids: Mapped[list] = mapped_column(JSONB, default=list)

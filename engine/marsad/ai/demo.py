@@ -25,7 +25,7 @@ def demo_handler(task: str, payload: dict) -> dict:
         return {"title_ar": f"عنوان تجريبي: {title}", "dek_ar": "ملخص تجريبي دون نموذج لغوي.",
                 "thesis_ar": "أطروحة تجريبية.", "key_points_ar": ["نقطة تجريبية."], "evidence_ar": "",
                 "recommendations_ar": [], "significance_ar": "", "quotes": [], "new_terms": []}
-    if task == "translate":
+    if task in ("translate", "translate_batch"):
         known = item.get("paragraphs_ar") if item else None
         return {"paragraphs": [{"id": p["id"], "ar": known[p["id"]] if known and p["id"] < len(known)
                                 else PLACEHOLDER.format(id=p["id"])} for p in payload["paragraphs"]],

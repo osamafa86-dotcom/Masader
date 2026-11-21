@@ -3,6 +3,7 @@ import os
 os.environ.setdefault("MARSAD_DATABASE_URL", "postgresql+psycopg://marsad:marsad@localhost:5432/marsad_test")
 os.environ.setdefault("MARSAD_PER_HOST_DELAY_S", "0")
 os.environ.setdefault("MARSAD_LLM_BACKEND", "fake")
+os.environ.setdefault("MARSAD_BATCH_ENABLED", "false")  # batch tests enable it explicitly
 
 from pathlib import Path
 

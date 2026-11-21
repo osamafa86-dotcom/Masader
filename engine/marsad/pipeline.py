@@ -245,30 +245,48 @@ def needs_review(doc: Document, tr: Translation, settings: Settings) -> bool:
     return bool(tr.qa_report.get("high")) or bool(tr.notes)
 
 
+def apply_translation(session: Session, doc: Document, result, terms: list[Term], settings: Settings,
+                      llm: LLM, usage_task: str = "translate") -> None:
+    """Store a finished translation, run QA, and route the item to review or publication."""
+    tr = doc.translation
+    for res in result.calls:
+        record_usage(session, doc, usage_task, res)
+    tr.paragraphs_ar, tr.notes = result.paragraphs, result.notes
+    tr.cost_usd += result.cost_usd
+    report, judge = qa_check(doc.paragraphs_en, result.paragraphs, terms, settings, llm, lang=doc.language or "en")
+    if judge:
+        record_usage(session, doc, "qa_judge", judge)
+        tr.cost_usd += judge.cost_usd
+    tr.qa_report = report
+    route(session, doc, settings)
+
+
+def route(session: Session, doc: Document, settings: Settings) -> None:
+    if needs_review(doc, doc.translation, settings):
+        doc.stage = Stage.review
+    else:
+        publish(session, doc, user=None)
+
+
+def batch_eligible(doc: Document, settings: Settings) -> bool:
+    return (settings.batch_enabled and doc.max_level == PublishLevel.full and bool(doc.paragraphs_en)
+            and (doc.language or "en") != "ar" and (doc.importance or 5) <= settings.batch_max_importance)
+
+
 def step_translate(session: Session, doc: Document, llm: LLM, terms: list[Term], settings: Settings) -> None:
     tr = doc.translation
     if doc.language == "ar" and doc.max_level == PublishLevel.full and doc.paragraphs_en:
         # Arabic-language source: the original text is published as is; only the summary is ours.
         tr.paragraphs_ar, tr.notes = list(doc.paragraphs_en), []
         tr.qa_report = {"score": None, "issues": [], "high": 0, "original_arabic": True}
+        route(session, doc, settings)
     elif doc.max_level == PublishLevel.full and doc.paragraphs_en:
         result = translate(llm, doc_input(doc), terms, settings, context_ar=tr.summary.get("thesis_ar", ""))
-        for res in result.calls:
-            record_usage(session, doc, "translate", res)
-        tr.paragraphs_ar, tr.notes = result.paragraphs, result.notes
-        tr.cost_usd += result.cost_usd
-        report, judge = qa_check(doc.paragraphs_en, result.paragraphs, terms, settings, llm, lang=doc.language or "en")
-        if judge:
-            record_usage(session, doc, "qa_judge", judge)
-            tr.cost_usd += judge.cost_usd
-        tr.qa_report = report
+        apply_translation(session, doc, result, terms, settings, llm)
     else:
         tr.paragraphs_ar, tr.notes = None, []  # rights level c: never translate the body
         tr.qa_report = {"score": None, "issues": [], "high": 0, "summary_only": True}
-    if needs_review(doc, tr, settings):
-        doc.stage = Stage.review
-    else:
-        publish(session, doc, user=None)
+        route(session, doc, settings)
 
 
 # ---------------------------------------------------------------- publishing
@@ -299,8 +317,23 @@ def publish(session: Session, doc: Document, user: User | None) -> None:
 
 
 # ---------------------------------------------------------------- driver
-def claim_next(session: Session, stages: tuple[Stage, ...], exclude: set[int] | None = None) -> Document | None:
+def not_batched(settings: Settings):
+    """SQL filter for documents the synchronous path may translate: not waiting for or inside a batch."""
+    from sqlalchemy import or_
+
+    waiting = Document.in_batch_id.is_not(None)
+    if not settings.batch_enabled:
+        return ~waiting
+    return ~waiting & or_(Document.importance.is_(None), Document.importance > settings.batch_max_importance,
+                          Document.max_level != PublishLevel.full, Document.language == "ar",
+                          func.jsonb_array_length(Document.paragraphs_en) == 0)
+
+
+def claim_next(session: Session, stages: tuple[Stage, ...], exclude: set[int] | None = None,
+               extra=None) -> Document | None:
     query = select(Document).where(Document.stage.in_(stages))
+    if extra is not None:
+        query = query.where(extra)
     if exclude:
         query = query.where(Document.id.not_in(exclude))
     return session.scalar(
