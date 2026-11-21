@@ -11,3 +11,4 @@ backups/
 *.zip
 golden/
 eval_runs/
+*.bundle
