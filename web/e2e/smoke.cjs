@@ -15,6 +15,18 @@ const JOURNAL_B = "الإنذار الاستراتيجي في عصر الأقم�
 const ENGINE = process.env.ENGINE_URL ?? "http://127.0.0.1:8000";
 const OUTBOX = process.env.OUTBOX_DIR; // MARSAD_FAKE_MAIL_DIR of the engine under test
 const fs = require("node:fs");
+const crypto = require("node:crypto");
+function totp(secret, at = Date.now() / 1000) {
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+  let bits = "";
+  for (const c of secret.replace(/=+$/, "")) bits += alphabet.indexOf(c).toString(2).padStart(5, "0");
+  const key = Buffer.from(bits.match(/.{8}/g).map((b) => parseInt(b, 2)));
+  const counter = Buffer.alloc(8);
+  counter.writeBigUInt64BE(BigInt(Math.floor(at / 30)));
+  const h = crypto.createHmac("sha1", key).update(counter).digest();
+  const o = h[h.length - 1] & 0xf;
+  return String((h.readUInt32BE(o) & 0x7fffffff) % 1e6).padStart(6, "0");
+}
 const path = require("node:path");
 function lastMailTo(email) {
   const files = fs.readdirSync(OUTBOX).filter((f) => f.endsWith(".json")).sort().reverse();
@@ -283,6 +295,46 @@ async function step(name, fn) {
     await page.waitForLoadState("networkidle");
     const revoked = await page.request.get(`${ENGINE}/v1/articles`, { headers: { "X-API-Key": key } });
     assert.equal(revoked.status(), 401);
+  });
+
+  await step("legal pages, weekly sample and readership beacon", async () => {
+    await page.goto(BASE + "/privacy");
+    await page.getByRole("heading", { name: "سياسة الخصوصية" }).waitFor();
+    await page.goto(BASE + "/terms#api");
+    await page.getByRole("heading", { name: "شروط الواجهة البرمجية" }).waitFor();
+    await page.goto(BASE + "/editor/sample");
+    await page.getByRole("heading", { name: "عينة الأسبوع" }).waitFor();
+    const beacon = page.waitForRequest((r) => r.url().endsWith("/api/views") && r.method() === "POST");
+    await page.goto(BASE + fullUrl);
+    await beacon;
+  });
+
+  await step("editor sets up two-step verification, then signs in with a code", async () => {
+    const editorEmail = `twofa${Date.now()}@example.org`;
+    execSync(`cd ../engine && .venv/bin/python -c "from marsad.db import session_scope; from marsad.models import User; from marsad.api.auth import hash_password;
+with session_scope() as s: s.add(User(email='${editorEmail}', name='محرر الاختبار', password_hash=hash_password('twofa-pass-123')))"`, { stdio: "ignore" });
+    const ctx = await browser.newContext();
+    const p2 = await ctx.newPage();
+    await p2.goto(BASE + "/editor/login");
+    await p2.getByLabel("البريد الإلكتروني").fill(editorEmail);
+    await p2.getByLabel("كلمة المرور").fill("twofa-pass-123");
+    await p2.getByRole("button", { name: "ادخل" }).click();
+    await p2.waitForURL(BASE + "/editor");
+    await p2.goto(BASE + "/editor/security");
+    await p2.getByRole("button", { name: "ابدأ الإعداد" }).click();
+    const secret = (await p2.locator(".key-once").innerText()).trim();
+    await p2.getByLabel("الرمز الذي يظهر في التطبيق").fill(totp(secret));
+    await p2.getByRole("button", { name: "فعّل", exact: true }).click();
+    await p2.getByText("التحقق بخطوتين مفعّل لحسابك").waitFor();
+    await ctx.clearCookies();
+    await p2.goto(BASE + "/editor/login");
+    await p2.getByLabel("البريد الإلكتروني").fill(editorEmail);
+    await p2.getByLabel("كلمة المرور").fill("twofa-pass-123");
+    await p2.getByRole("button", { name: "ادخل" }).click();
+    await p2.getByLabel("رمز التحقق من تطبيق المصادقة").fill(totp(secret, Date.now() / 1000 + 30));
+    await p2.getByRole("button", { name: "ادخل" }).click();
+    await p2.waitForURL(BASE + "/editor");
+    await ctx.close();
   });
 
   await browser.close();
