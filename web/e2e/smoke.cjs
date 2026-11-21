@@ -87,10 +87,12 @@ async function step(name, fn) {
   await step("editor login rejects a wrong password", async () => {
     await page.goto(BASE + "/editor");
     await page.waitForURL(/\/editor\/login/);
-    await page.getByLabel("البريد الإلكتروني").fill(EMAIL);
+    // A throwaway address, so repeated runs never trip the lockout on the real editor account.
+    await page.getByLabel("البريد الإلكتروني").fill(`nobody${Date.now()}@example.org`);
     await page.getByLabel("كلمة المرور").fill("wrong-password");
     await page.getByRole("button", { name: "ادخل" }).click();
     await page.getByText("غير صحيحة").waitFor();
+    await page.getByLabel("البريد الإلكتروني").fill(EMAIL);
   });
 
   await step("editor takes an item down and publishes it again", async () => {
