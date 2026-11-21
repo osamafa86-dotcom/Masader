@@ -12,3 +12,4 @@ backups/
 golden/
 eval_runs/
 *.bundle
+*.tsbuildinfo
