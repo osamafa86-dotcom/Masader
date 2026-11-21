@@ -1,6 +1,7 @@
 import "server-only";
 import { cookies } from "next/headers";
 import { ENGINE_URL } from "./api";
+import { clientHeaders } from "./clientip";
 
 export const READER_COOKIE = "marsad_reader";
 
@@ -10,7 +11,7 @@ export async function readerFetch<T>(path: string, init: RequestInit = {}): Prom
   if (!token) return { status: 401, data: null };
   const res = await fetch(`${ENGINE_URL}${path}`, {
     ...init, cache: "no-store",
-    headers: { "content-type": "application/json", ...(init.headers ?? {}), "x-reader-token": token },
+    headers: { "content-type": "application/json", ...(await clientHeaders()), ...(init.headers ?? {}), "x-reader-token": token },
   });
   let data: T | null = null;
   try { data = (await res.json()) as T; } catch { /* empty */ }

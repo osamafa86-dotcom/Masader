@@ -40,8 +40,10 @@ export const api = {
 
 /** Uncached call for the newsletter flows (each response depends on a personal token). */
 export async function engine<T>(path: string, init: RequestInit = {}): Promise<{ status: number; data: T | null }> {
+  const { clientHeaders } = await import("./clientip");
   const res = await fetch(`${ENGINE_URL}${path}`, {
-    ...init, cache: "no-store", headers: { "content-type": "application/json", ...(init.headers ?? {}) },
+    ...init, cache: "no-store",
+    headers: { "content-type": "application/json", ...(await clientHeaders()), ...(init.headers ?? {}) },
   });
   let data: T | null = null;
   try { data = (await res.json()) as T; } catch { /* empty body */ }

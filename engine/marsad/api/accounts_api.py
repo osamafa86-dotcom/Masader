@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from marsad import accounts
 from marsad.api import public as pub
-from marsad.api.deps import get_db, get_settings_dep
+from marsad.api.deps import get_db, get_settings_dep, limited
 from marsad.api.newsletter import get_mailer
 from marsad.api.serialize import article_card
 from marsad.models import Document, Reader, SavedItem, Stage
@@ -28,7 +28,7 @@ class EmailIn(BaseModel):
     email: str = Field(..., max_length=320)
 
 
-@router.post("/login", status_code=202)
+@router.post("/login", status_code=202, dependencies=[Depends(limited("reader_login", 10, 3600))])
 def login(body: EmailIn, db: Session = Depends(get_db), mailer=Depends(get_mailer), settings=Depends(get_settings_dep)):
     email = nl.normalize_email(body.email)
     if email is None:

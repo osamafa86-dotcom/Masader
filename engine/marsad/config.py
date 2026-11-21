@@ -9,6 +9,8 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="MARSAD_", env_file=".env", extra="ignore")
 
     database_url: str = "postgresql+psycopg://marsad:marsad@localhost:5432/marsad"
+    secret_key: str = "dev-insecure-change-me"  # encrypts stored 2FA secrets; set a long random value in production
+    require_editor_2fa: bool = False
     storage_dir: str = "./storage"
 
     # Site policy

@@ -1,13 +1,13 @@
 """Editorial API: review queue, edits, publishing decisions, glossary and source rights."""
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
 
 from marsad.ai.tasks import translate_one
 from marsad.api.auth import admin_user, bearer, create_session, current_user, end_session, verify_password
-from marsad.api.deps import get_db, get_llm, get_settings_dep
+from marsad.api.deps import client_address, get_db, get_llm, get_settings_dep
 from marsad.api.serialize import editor_item, queue_row
 from marsad.models import (
     AuditLog,
@@ -44,13 +44,30 @@ def _audit(db: Session, user: User, action: str, entity: str, entity_id: int | N
 class LoginIn(BaseModel):
     email: str
     password: str
+    code: str | None = Field(None, max_length=10)
 
 
 @router.post("/login")
-def login(body: LoginIn, db: Session = Depends(get_db)):
-    user = db.scalar(select(User).where(func.lower(User.email) == body.email.lower().strip()))
+def login(body: LoginIn, request: Request, db: Session = Depends(get_db), settings=Depends(get_settings_dep)):
+    from marsad.security import decrypt, locked_out, record_attempt, verify_totp
+
+    email, address = body.email.lower().strip(), client_address(request)
+    if locked_out(db, email, address):
+        raise HTTPException(429, "محاولات دخول فاشلة كثيرة. انتظر 15 دقيقة ثم حاول مجدداً.", headers={"Retry-After": "900"})
+    user = db.scalar(select(User).where(func.lower(User.email) == email))
     if user is None or not user.is_active or not verify_password(body.password, user.password_hash):
+        record_attempt(db, email, address, success=False)
         raise HTTPException(401, "البريد الإلكتروني أو كلمة المرور غير صحيحة")
+    if user.totp_enabled:
+        if not body.code:
+            raise HTTPException(401, {"message": "أدخل رمز التحقق من تطبيق المصادقة", "otp_required": True})
+        secret = decrypt(settings, user.totp_secret_enc or "")
+        step = verify_totp(secret, body.code, user.totp_last_step) if secret else None
+        if step is None:
+            record_attempt(db, email, address, success=False)
+            raise HTTPException(401, {"message": "رمز التحقق غير صحيح أو مستخدم من قبل", "otp_required": True})
+        user.totp_last_step = step
+    record_attempt(db, email, address, success=True)
     token = create_session(db, user)
     db.commit()
     return {"token": token, "user": {"id": user.id, "name": user.name, "email": user.email, "role": user.role}}
@@ -64,8 +81,58 @@ def logout(token: str = Depends(bearer), db: Session = Depends(get_db)):
 
 
 @router.get("/me")
-def me(user: User = Depends(current_user)):
-    return {"id": user.id, "name": user.name, "email": user.email, "role": user.role}
+def me(user: User = Depends(current_user), settings=Depends(get_settings_dep)):
+    return {"id": user.id, "name": user.name, "email": user.email, "role": user.role,
+            "totp_enabled": user.totp_enabled, "two_factor_required": settings.require_editor_2fa}
+
+
+# ---------------------------------------------------------------- two-factor authentication
+class CodeIn(BaseModel):
+    code: str = Field(..., min_length=6, max_length=10)
+
+
+@router.post("/2fa/setup")
+def two_factor_setup(user: User = Depends(current_user), db: Session = Depends(get_db), settings=Depends(get_settings_dep)):
+    """Creates a new (not yet active) secret and returns it with a QR code for the authenticator app."""
+    from marsad.security import encrypt, new_totp_secret, otpauth_uri, qr_svg
+
+    if user.totp_enabled:
+        raise HTTPException(409, "التحقق بخطوتين مفعّل. عطّله أولاً لإعادة الإعداد.")
+    secret = new_totp_secret()
+    user.totp_secret_enc, user.totp_last_step = encrypt(settings, secret), None
+    db.commit()
+    uri = otpauth_uri(secret, user.email, settings.site_name)
+    return {"secret": secret, "otpauth_uri": uri, "qr_svg": qr_svg(uri)}
+
+
+@router.post("/2fa/enable")
+def two_factor_enable(body: CodeIn, user: User = Depends(current_user), db: Session = Depends(get_db),
+                      settings=Depends(get_settings_dep)):
+    from marsad.security import decrypt, verify_totp
+
+    secret = decrypt(settings, user.totp_secret_enc or "")
+    step = verify_totp(secret, body.code, None) if secret else None
+    if step is None:
+        raise HTTPException(400, "الرمز غير صحيح. تأكد من ضبط ساعة الهاتف ثم أعد المحاولة.")
+    user.totp_enabled, user.totp_last_step = True, step
+    _audit(db, user, "2fa_enable", "user", user.id)
+    db.commit()
+    return {"totp_enabled": True}
+
+
+@router.post("/2fa/disable")
+def two_factor_disable(body: CodeIn, user: User = Depends(current_user), db: Session = Depends(get_db),
+                       settings=Depends(get_settings_dep)):
+    from marsad.security import decrypt, verify_totp
+
+    secret = decrypt(settings, user.totp_secret_enc or "")
+    step = verify_totp(secret, body.code, user.totp_last_step) if secret and user.totp_enabled else None
+    if step is None:
+        raise HTTPException(400, "الرمز غير صحيح")
+    user.totp_enabled, user.totp_secret_enc, user.totp_last_step = False, None, None
+    _audit(db, user, "2fa_disable", "user", user.id)
+    db.commit()
+    return {"totp_enabled": False}
 
 
 # ---------------------------------------------------------------- queue and stats

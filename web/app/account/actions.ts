@@ -12,6 +12,7 @@ export async function requestLink(_: AccState, form: FormData): Promise<AccState
   if (status === 202) return { ok: true, message: "إن كان البريد صحيحاً فسيصلك رابط الدخول خلال دقائق. الرابط صالح 20 دقيقة." };
   if (status === 422) return { ok: false, message: "اكتب بريداً إلكترونياً صحيحاً." };
   if (status === 503) return { ok: false, message: "الحسابات غير مفعّلة بعد على هذا الموقع." };
+  if (status === 429) return { ok: false, message: "طلبات كثيرة من عنوانك. حاول مجدداً بعد ساعة." };
   return { ok: false, message: "تعذّر إرسال الرابط الآن. حاول مجدداً بعد قليل." };
 }
 

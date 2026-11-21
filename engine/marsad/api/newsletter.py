@@ -6,7 +6,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from marsad.api.auth import current_user
-from marsad.api.deps import get_db, get_settings_dep
+from marsad.api.deps import get_db, get_settings_dep, limited
 from marsad.api.serialize import queue_row
 from marsad.models import AuditLog, Digest, DigestDelivery, Document, Stage, Subscriber, User
 from marsad.newsletter import service
@@ -33,7 +33,7 @@ class SubscribeIn(BaseModel):
 GENERIC = {"ok": True, "message": "إن كان البريد صحيحاً فستصلك رسالة لتأكيد الاشتراك خلال دقائق."}
 
 
-@public.post("/subscribe", status_code=202)
+@public.post("/subscribe", status_code=202, dependencies=[Depends(limited("subscribe", 10, 3600))])
 def subscribe(body: SubscribeIn, db: Session = Depends(get_db), mailer=Depends(get_mailer),
               settings=Depends(get_settings_dep)):
     email = service.normalize_email(body.email)

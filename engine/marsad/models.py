@@ -218,6 +218,9 @@ class User(Base):
     password_hash: Mapped[str] = mapped_column(String(300))
     role: Mapped[str] = mapped_column(String(16), default="editor")  # admin | editor
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    totp_secret_enc: Mapped[str | None] = mapped_column(Text)  # encrypted with MARSAD_SECRET_KEY
+    totp_enabled: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    totp_last_step: Mapped[int | None] = mapped_column(Integer)
 
 
 class UserSession(Base):
@@ -465,3 +468,24 @@ class AiBatchRequest(Base):
     batch_id: Mapped[int] = mapped_column(ForeignKey("ai_batches.id", ondelete="CASCADE"), index=True)
     document_id: Mapped[int] = mapped_column(ForeignKey("documents.id", ondelete="CASCADE"))
     paragraph_ids: Mapped[list] = mapped_column(JSONB, default=list)
+
+
+class LoginAttempt(Base):
+    __tablename__ = "login_attempts"
+    __table_args__ = (Index("ix_login_attempts_email_time", "email", "created_at"),
+                      Index("ix_login_attempts_addr_time", "client_address", "created_at"))
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    email: Mapped[str] = mapped_column(String(320))
+    client_address: Mapped[str] = mapped_column(String(64))
+    success: Mapped[bool] = mapped_column(Boolean)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class RateCounter(Base):
+    __tablename__ = "rate_counters"
+
+    bucket: Mapped[str] = mapped_column(String(32), primary_key=True)
+    key: Mapped[str] = mapped_column(String(200), primary_key=True)
+    window_start: Mapped[datetime] = mapped_column(DateTime(timezone=True), primary_key=True)
+    count: Mapped[int] = mapped_column(Integer, default=0)

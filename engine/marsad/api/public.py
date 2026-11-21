@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session, selectinload
 
-from marsad.api.deps import get_db, get_embedder, get_settings_dep
+from marsad.api.deps import get_db, get_embedder, get_settings_dep, limited
 from marsad.embed import embed_query
 from marsad.api.serialize import article_card, article_detail, source_brief
 from marsad.arabic import loose_form, normalize_ar
@@ -256,7 +256,7 @@ class FeedbackIn(BaseModel):
     message: str = Field(..., min_length=3, max_length=2000)
 
 
-@router.post("/feedback", status_code=201)
+@router.post("/feedback", status_code=201, dependencies=[Depends(limited("feedback", 20, 3600))])
 def post_feedback(body: FeedbackIn, db: Session = Depends(get_db)):
     doc = db.scalar(select(Document).where(Document.id == body.document_id, Document.stage == Stage.published))
     if doc is None:

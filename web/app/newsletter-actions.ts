@@ -15,6 +15,7 @@ export async function subscribeAction(_: NlState, form: FormData): Promise<NlSta
   if (status === 202) return { ok: true, message: data?.message ?? "تحقق من بريدك لتأكيد الاشتراك." };
   if (status === 422) return { ok: false, message: "اكتب بريداً إلكترونياً صحيحاً." };
   if (status === 503) return { ok: false, message: "النشرة البريدية لم تُفعّل بعد. عد إلينا قريباً." };
+  if (status === 429) return { ok: false, message: "طلبات كثيرة من عنوانك. حاول مجدداً بعد ساعة." };
   return { ok: false, message: "تعذّر إرسال رسالة التأكيد الآن. حاول مجدداً بعد قليل." };
 }
 

@@ -54,6 +54,7 @@ function EditorBar() {
           <Link href="/editor/dossiers">الملفات</Link>
           <Link href="/editor/trends">الاتجاهات</Link>
           <Link href="/editor/api-clients">مفاتيح الواجهة</Link>
+          <Link href="/editor/security">الأمان</Link>
           <Link href="/editor/glossary">المسرد</Link>
           <Link href="/editor/feedback">بلاغات القرّاء</Link>
           <Link href="/" target="_blank">الموقع العام</Link>

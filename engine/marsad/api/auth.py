@@ -5,11 +5,11 @@ import hmac
 import secrets
 from datetime import datetime, timedelta, timezone
 
-from fastapi import Depends, Header, HTTPException
+from fastapi import Depends, Header, HTTPException, Request
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
-from marsad.api.deps import get_db
+from marsad.api.deps import get_db, get_settings_dep
 from marsad.models import User, UserSession
 
 SESSION_DAYS = 14
@@ -53,10 +53,17 @@ def bearer(authorization: str | None = Header(default=None)) -> str:
     return authorization[7:].strip()
 
 
-def current_user(token: str = Depends(bearer), db: Session = Depends(get_db)) -> User:
+TWO_FACTOR_EXEMPT = ("/api/editor/me", "/api/editor/logout", "/api/editor/2fa")
+
+
+def current_user(request: Request, token: str = Depends(bearer), db: Session = Depends(get_db),
+                 settings=Depends(get_settings_dep)) -> User:
     row = db.scalar(select(UserSession).where(UserSession.token_hash == _token_hash(token)))
     if row is None or row.expires_at < datetime.now(timezone.utc) or not row.user.is_active:
         raise HTTPException(401, "انتهت الجلسة، يرجى تسجيل الدخول مجدداً")
+    if settings.require_editor_2fa and not row.user.totp_enabled and \
+            not request.url.path.startswith(TWO_FACTOR_EXEMPT):
+        raise HTTPException(403, "فعّل التحقق بخطوتين من صفحة «الأمان» قبل المتابعة")
     return row.user
 
 

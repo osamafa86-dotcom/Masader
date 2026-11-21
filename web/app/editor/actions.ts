@@ -6,15 +6,23 @@ import { ENGINE_URL } from "@/lib/api";
 import { TOKEN_COOKIE, editorFetch } from "@/lib/editor";
 import type { ApiClientRow, EditorDossier, EditorItem, QueueRow } from "@/lib/types";
 
-export type ActionResult = { ok: boolean; message: string; item?: EditorItem; email?: string } | null;
+export type ActionResult = { ok: boolean; message: string; item?: EditorItem; email?: string; otp?: boolean } | null;
 
 export async function login(_prev: ActionResult, form: FormData): Promise<ActionResult> {
+  const { clientHeaders } = await import("@/lib/clientip");
+  const code = String(form.get("code") ?? "").trim();
   const res = await fetch(`${ENGINE_URL}/api/editor/login`, {
     method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ email: form.get("email"), password: form.get("password") }),
+    headers: { "content-type": "application/json", ...(await clientHeaders()) },
+    body: JSON.stringify({ email: form.get("email"), password: form.get("password"), ...(code ? { code } : {}) }),
   });
-  if (!res.ok) return { ok: false, message: "البريد الإلكتروني أو كلمة المرور غير صحيحة.", email: String(form.get("email") ?? "") };
+  const email = String(form.get("email") ?? "");
+  if (res.status === 429) return { ok: false, message: "محاولات دخول فاشلة كثيرة. انتظر 15 دقيقة ثم حاول مجدداً.", email };
+  if (!res.ok) {
+    const detail = (await res.json().catch(() => ({}))).detail;
+    if (detail && typeof detail === "object" && detail.otp_required) return { ok: false, message: detail.message, email, otp: true };
+    return { ok: false, message: "البريد الإلكتروني أو كلمة المرور غير صحيحة.", email };
+  }
   const { token } = await res.json();
   (await cookies()).set(TOKEN_COOKIE, token, {
     httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/", maxAge: 60 * 60 * 24 * 14,
@@ -214,3 +222,21 @@ export async function setApiClientActive(id: number, active: boolean) {
   await editorFetch(`/api/editor/api-clients/${id}`, { method: "PATCH", body: JSON.stringify({ is_active: active }) });
   revalidatePath("/editor/api-clients");
 }
+
+
+// ---------------------------------------------------------------- two-factor
+type TwoFactorResult = { ok: boolean; message: string; data?: { secret: string; qr_svg: string } };
+
+async function twoFactorCall(path: string, body?: object, okMessage = ""): Promise<TwoFactorResult> {
+  try {
+    const data = await editorFetch<{ secret: string; qr_svg: string }>(path, { method: "POST", body: body ? JSON.stringify(body) : undefined });
+    return { ok: true, message: okMessage, data };
+  } catch (e) {
+    if (e && typeof e === "object" && "digest" in e) throw e;
+    return { ok: false, message: e instanceof Error ? e.message : "تعذّر تنفيذ الطلب." };
+  }
+}
+
+export async function startTwoFactor() { return twoFactorCall("/api/editor/2fa/setup"); }
+export async function enableTwoFactor(code: string) { return twoFactorCall("/api/editor/2fa/enable", { code }, "فُعّل التحقق بخطوتين."); }
+export async function disableTwoFactor(code: string) { return twoFactorCall("/api/editor/2fa/disable", { code }, "عُطّل التحقق بخطوتين."); }
