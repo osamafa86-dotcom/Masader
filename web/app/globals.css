@@ -193,7 +193,7 @@ blockquote.quote .en { font-family: var(--font-latin); color: var(--graphite); f
 
 .footer { border-top: 1px solid var(--rule); padding-block: 2rem; font-family: var(--font-kufi); font-size: 0.85rem; color: var(--graphite); }
 .footer .wrap { display: flex; gap: 2rem; flex-wrap: wrap; justify-content: space-between; }
-.footer nav { display: flex; gap: 1.5rem; }
+.footer nav { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; }
 
 .prose { max-width: var(--measure); }
 .prose h2 { margin-top: 2rem; }
