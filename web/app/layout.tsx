@@ -30,6 +30,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <a href="/subscribe">النشرة الأسبوعية</a>
               <a href="/feed.xml">خلاصة RSS</a>
               <a href="/developers">الواجهة البرمجية</a>
+              <a href="/privacy">الخصوصية</a>
+              <a href="/terms">شروط الاستخدام</a>
               <a href="/editor">غرفة التحرير</a>
             </nav>
           </div>

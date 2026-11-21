@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useActionState } from "react";
 import {
   confirmAction, savePrefsAction, subscribeAction, unsubscribeAction, type NlState,
@@ -55,6 +56,7 @@ export function SubscribeForm({ choices }: { choices: Choices }) {
         <div style={{ marginTop: "1rem" }}><Preferences choices={choices} /></div>
       </details>
       <Note state={state} />
+      <p className="ui muted">نستخدم بريدك لإرسال النشرة فقط. <Link href="/privacy">سياسة الخصوصية</Link></p>
       <button className="btn accent" disabled={pending}>{pending ? "جارٍ الإرسال" : "اشترك"}</button>
     </form>
   );

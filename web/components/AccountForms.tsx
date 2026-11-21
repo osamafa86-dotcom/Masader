@@ -16,6 +16,7 @@ export function LoginForm() {
     <form action={action}>
       <div className="field"><label htmlFor="email">بريدك الإلكتروني</label><input id="email" name="email" type="email" required dir="ltr" autoComplete="email" /></div>
       <Note state={state} />
+      <p className="ui muted">نحفظ بريدك ومكتبتك فقط، ويمكنك حذفهما متى شئت. <Link href="/privacy">سياسة الخصوصية</Link></p>
       <button className="btn" disabled={pending}>{pending ? "جارٍ الإرسال" : "أرسل رابط الدخول"}</button>
     </form>
   );

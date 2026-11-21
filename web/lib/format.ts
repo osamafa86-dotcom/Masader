@@ -17,6 +17,7 @@ export function readingMinutes(words: number): number {
 
 export const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME ?? "مصادر";
 export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+export const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL ?? "editor@example.org";
 
 const monthFmt = new Intl.DateTimeFormat("ar-u-nu-latn", { month: "long", year: "numeric", timeZone: "UTC" });
 

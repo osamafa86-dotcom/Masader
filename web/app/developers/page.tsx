@@ -32,7 +32,7 @@ export default function Developers() {
         <thead><tr><th scope="col">الطلب</th><th scope="col">ما يعيده</th></tr></thead>
         <tbody>{ENDPOINTS.map(([path, desc]) => <tr key={path}><td className="en" dir="ltr">{path}</td><td>{desc}</td></tr>)}</tbody>
       </table>
-      <p><a href={`${base}/v1/docs`}>التوثيق التفاعلي الكامل (بالإنجليزية)</a></p>
+      <p><a href={`${base}/v1/docs`}>التوثيق التفاعلي الكامل (بالإنجليزية)</a>. استخدام الواجهة يعني قبول <a href="/terms#api">شروطها</a>.</p>
       <h2>الحقوق</h2>
       <p>تطبق الواجهة قواعد الموقع نفسها: لا يُعاد النص الكامل إلا حين يسمح ترخيص المصدر أو إذنه بذلك. احتفظ عند العرض باسم المصدر
         والمؤلفين ورابط الأصل والترخيص، واذكر {SITE_NAME} مصدراً للترجمة والملخص.</p>
