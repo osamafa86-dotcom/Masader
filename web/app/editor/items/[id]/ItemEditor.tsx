@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
 import type { EditorItem, QAIssue } from "@/lib/types";
 import { arDate } from "@/lib/format";
-import { itemAction, retranslate, saveItem, setLicense, type ActionResult } from "../../actions";
+import { assignItem, itemAction, retranslate, saveItem, setLicense, type ActionResult } from "../../actions";
 
 const STAGE_AR: Record<string, string> = {
   discovered: "رُصدت", extracted: "استُخرج النص", classified: "صُنّفت", summarized: "لُخّصت", translated: "تُرجمت",
@@ -12,7 +12,7 @@ const STAGE_AR: Record<string, string> = {
 const SEVERITY_AR = { high: "جسيمة", medium: "متوسطة", low: "طفيفة" };
 const lines = (v: string) => v.split("\n").map((s) => s.trim()).filter(Boolean);
 
-export function ItemEditor({ initial }: { initial: EditorItem }) {
+export function ItemEditor({ initial, editors }: { initial: EditorItem; editors: { id: number; name: string }[] }) {
   const [item, setItem] = useState(initial);
   const tr = item.translation;
   const [title, setTitle] = useState(tr?.title_ar ?? "");
@@ -113,6 +113,15 @@ export function ItemEditor({ initial }: { initial: EditorItem }) {
         {["review", "published"].includes(item.stage) && <button className="btn danger" onClick={() => act("reject")} disabled={pending}>رفض</button>}
         {["failed", "rejected"].includes(item.stage) && <button className="btn" onClick={() => act("retry")} disabled={pending}>إعادة المعالجة</button>}
         {item.stage === "published" && <Link className="btn secondary" href={`/articles/${item.id}`} target="_blank">عرض في الموقع</Link>}
+        <label className="ui" style={{ display: "inline-flex", gap: "0.4rem", alignItems: "center" }}>المسؤول
+          <select value={item.assigned_to ?? ""} disabled={pending} onChange={(e) => {
+            const v = e.target.value ? Number(e.target.value) : null;
+            start(async () => apply(await assignItem(item.id, v)));
+          }}>
+            <option value="">بلا إسناد</option>
+            {editors.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
+          </select>
+        </label>
         {result && <span className={`notice ${result.ok ? "ok" : "error"}`} role="status" style={{ margin: 0 }}>{result.message}</span>}
       </div>
 

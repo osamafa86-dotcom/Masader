@@ -69,6 +69,7 @@ export type EditorItem = {
   stage: string;
   error: string | null;
   attempts: number;
+  assigned_to: number | null;
   title_en: string;
   url: string;
   authors: string[];

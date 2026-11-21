@@ -97,6 +97,7 @@ def editor_item(doc: Document) -> dict:
         "stage": doc.stage.value,
         "error": doc.error,
         "attempts": doc.attempts,
+        "assigned_to": doc.assigned_to,
         "title_en": doc.title_en,
         "url": doc.url,
         "authors": doc.authors or [],
@@ -147,4 +148,5 @@ def queue_row(doc: Document) -> dict:
         "notes": len(tr.notes or []) if tr else 0,
         "error": doc.error,
         "created_at": doc.created_at.isoformat(),
+        "assigned_to": doc.assigned_to,
     }

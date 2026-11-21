@@ -13,5 +13,6 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
     if (e.message.includes("غير موجودة")) notFound();
     throw e;
   });
-  return <ItemEditor initial={item} />;
+  const editors = await editorFetch<{ id: number; name: string }[]>("/api/editor/users");
+  return <ItemEditor initial={item} editors={editors} />;
 }

@@ -130,12 +130,14 @@ class Document(Base):
     max_level: Mapped[PublishLevel] = mapped_column(_enum(PublishLevel, "publish_level"), default=PublishLevel.summary)
     meta: Mapped[dict] = mapped_column(JSONB, default=dict, server_default="{}")  # journal, volume, issue, pages, doi
     in_batch_id: Mapped[int | None] = mapped_column(ForeignKey("ai_batches.id", ondelete="SET NULL"), index=True)
+    assigned_to: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), index=True)
     item_license: Mapped[str | None] = mapped_column(String(64))
     item_rights_evidence: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
 
     source: Mapped[Source] = relationship()
+    assignee: Mapped["User | None"] = relationship(foreign_keys=[assigned_to])
     translation: Mapped["Translation | None"] = relationship(back_populates="document", uselist=False)
     tags: Mapped[list["DocumentTag"]] = relationship(cascade="all, delete-orphan")
     author_links: Mapped[list["DocumentAuthor"]] = relationship(cascade="all, delete-orphan",
@@ -161,6 +163,8 @@ class Translation(Base):
     reviewer_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
+    sampled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    sample_result: Mapped[str | None] = mapped_column(String(16))  # ok | fixed | unpublished
     search_text: Mapped[str] = mapped_column(Text, default="")
     search_vector = mapped_column(
         TSVECTOR, Computed("to_tsvector('simple', coalesce(search_text, ''))", persisted=True)

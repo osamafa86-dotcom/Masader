@@ -146,17 +146,22 @@ QUEUE_STAGES = {
 
 
 @router.get("/queue")
-def queue(stage: str = Query("review"), page: int = Query(1, ge=1), per_page: int = Query(50, ge=1, le=200),
-          user: User = Depends(current_user), db: Session = Depends(get_db)):
+def queue(stage: str = Query("review"), mine: bool = False, page: int = Query(1, ge=1),
+          per_page: int = Query(50, ge=1, le=200), user: User = Depends(current_user), db: Session = Depends(get_db)):
     stages = QUEUE_STAGES.get(stage)
     if stages is None:
         raise HTTPException(400, "مرحلة غير معروفة")
     q = select(Document).where(Document.stage.in_(stages)).options(*_LOAD)
+    if mine:
+        q = q.where(Document.assigned_to == user.id)
     if stage == "review":
         q = q.order_by(Document.importance.desc().nulls_last(), Document.created_at)
     else:
         q = q.order_by(Document.updated_at.desc())
-    total = db.scalar(select(func.count()).select_from(Document).where(Document.stage.in_(stages)))
+    count_q = select(func.count()).select_from(Document).where(Document.stage.in_(stages))
+    if mine:
+        count_q = count_q.where(Document.assigned_to == user.id)
+    total = db.scalar(count_q)
     rows = db.scalars(q.offset((page - 1) * per_page).limit(per_page)).all()
     return {"items": [queue_row(d) for d in rows], "total": total, "page": page}
 
@@ -319,6 +324,51 @@ def retranslate_paragraph(doc_id: int, idx: int, user: User = Depends(current_us
     record_usage(db, doc, "retranslate", res)
     db.commit()
     return {"index": idx, "ar": text, "notes": notes}
+
+
+# ---------------------------------------------------------------- assignment and sampling
+@router.get("/users")
+def list_editors(user: User = Depends(current_user), db: Session = Depends(get_db)):
+    return [{"id": u.id, "name": u.name} for u in db.scalars(select(User).where(User.is_active).order_by(User.name))]
+
+
+class AssignIn(BaseModel):
+    user_id: int | None = None
+
+
+@router.post("/items/{doc_id}/assign")
+def assign_item(doc_id: int, body: AssignIn, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    doc = _doc(db, doc_id)
+    if body.user_id is not None and db.get(User, body.user_id) is None:
+        raise HTTPException(404, "المحرر غير موجود")
+    doc.assigned_to = body.user_id
+    _audit(db, user, "assign", "document", doc.id, to=body.user_id)
+    db.commit()
+    return editor_item(doc)
+
+
+@router.get("/sample")
+def sample(user: User = Depends(current_user), db: Session = Depends(get_db)):
+    from marsad.sampling import current_sample
+
+    return [queue_row(d) for d in current_sample(db)]
+
+
+class SampleIn(BaseModel):
+    result: str = Field(..., pattern="^(ok|fixed)$")
+
+
+@router.post("/items/{doc_id}/sample")
+def record_sample(doc_id: int, body: SampleIn, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    from marsad.models import utcnow
+
+    doc = _doc(db, doc_id)
+    if doc.translation is None:
+        raise HTTPException(409, "لا توجد ترجمة")
+    doc.translation.sampled_at, doc.translation.sample_result = utcnow(), body.result
+    _audit(db, user, "sample", "document", doc.id, result=body.result)
+    db.commit()
+    return editor_item(doc)
 
 
 # ---------------------------------------------------------------- manual import

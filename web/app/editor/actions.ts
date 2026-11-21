@@ -240,3 +240,14 @@ async function twoFactorCall(path: string, body?: object, okMessage = ""): Promi
 export async function startTwoFactor() { return twoFactorCall("/api/editor/2fa/setup"); }
 export async function enableTwoFactor(code: string) { return twoFactorCall("/api/editor/2fa/enable", { code }, "فُعّل التحقق بخطوتين."); }
 export async function disableTwoFactor(code: string) { return twoFactorCall("/api/editor/2fa/disable", { code }, "عُطّل التحقق بخطوتين."); }
+
+
+export async function markSample(id: number, result: "ok" | "fixed") {
+  await editorFetch(`/api/editor/items/${id}/sample`, { method: "POST", body: JSON.stringify({ result }) });
+  revalidatePath("/editor/sample");
+}
+
+export async function assignItem(id: number, userId: number | null): Promise<ActionResult> {
+  return run(() => editorFetch<EditorItem>(`/api/editor/items/${id}/assign`, { method: "POST", body: JSON.stringify({ user_id: userId }) }),
+    userId ? "أُسندت المادة." : "أُلغي الإسناد.");
+}

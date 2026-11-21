@@ -15,11 +15,13 @@ const STAGE_COUNT: Record<string, string[]> = {
   failed: ["failed"], published: ["published"], rejected: ["rejected"],
 };
 
-export default async function EditorHome({ searchParams }: { searchParams: Promise<{ stage?: string }> }) {
-  const stage = (await searchParams).stage ?? "review";
+export default async function EditorHome({ searchParams }: { searchParams: Promise<{ stage?: string; mine?: string }> }) {
+  const sp = await searchParams;
+  const stage = sp.stage ?? "review";
+  const mine = sp.mine === "1";
   const [stats, queue] = await Promise.all([
     editorFetch<Stats>("/api/editor/stats"),
-    editorFetch<{ items: QueueRow[]; total: number }>(`/api/editor/queue?stage=${encodeURIComponent(stage)}`),
+    editorFetch<{ items: QueueRow[]; total: number }>(`/api/editor/queue?stage=${encodeURIComponent(stage)}${mine ? "&mine=true" : ""}`),
   ]);
   const budgetPct = Math.min(100, Math.round((stats.spent_today_usd / stats.daily_budget_usd) * 100));
   const failing = stats.sources.filter((s) => s.last_error);
@@ -34,8 +36,10 @@ export default async function EditorHome({ searchParams }: { searchParams: Promi
         {stats.problems.filter((p) => !p.startsWith("آخر دورة للعامل")).map((p, i) => <p key={i} className="notice">{p}</p>)}
         <h1 className="page-title">{TABS.find(([k]) => k === stage)?.[1] ?? "صف المراجعة"}</h1>
         <nav className="nav" aria-label="المراحل" style={{ margin: "1rem 0 1.5rem" }}>
+          <Link href="/editor?stage=review&mine=1" aria-current={mine ? "page" : undefined}>مهامي</Link>
+          <Link href="/editor/sample">عينة الأسبوع</Link>
           {TABS.map(([k, label]) => (
-            <Link key={k} href={`/editor?stage=${k}`} aria-current={k === stage ? "page" : undefined}>
+            <Link key={k} href={`/editor?stage=${k}`} aria-current={k === stage && !mine ? "page" : undefined}>
               {label} <span className="count">({STAGE_COUNT[k].reduce((n, s) => n + (stats.stages[s] ?? 0), 0)})</span>
             </Link>
           ))}
