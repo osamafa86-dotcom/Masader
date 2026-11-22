@@ -5,7 +5,7 @@ import time
 
 from sqlalchemy.orm import Session, sessionmaker
 
-from marsad.ai.llm import LLM, AnthropicLLM, FakeLLM
+from marsad.ai.llm import LLM, AnthropicLLM, FakeLLM, GeminiLLM
 from marsad.config import Settings
 from marsad.embed import embed_pending, make_embedder
 from marsad.newsletter.mailer import make_mailer
@@ -27,6 +27,9 @@ def make_llm(settings: Settings) -> LLM:
         from marsad.ai.demo import demo_handler
 
         return FakeLLM(demo_handler)
+    if settings.llm_backend == "gemini":
+        return GeminiLLM(api_key=settings.gemini_api_key or None, model=settings.gemini_model,
+                         model_light=settings.gemini_model_light)
     return AnthropicLLM()
 
 

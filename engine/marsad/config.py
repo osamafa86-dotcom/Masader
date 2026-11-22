@@ -25,7 +25,10 @@ class Settings(BaseSettings):
     http_timeout_s: float = 30.0
 
     # AI
-    llm_backend: str = "anthropic"  # "anthropic" | "fake"
+    llm_backend: str = "anthropic"  # "anthropic" | "gemini" | "fake"
+    gemini_api_key: str = ""  # also read from GEMINI_API_KEY
+    gemini_model: str = "gemini-3.8-flash"  # translation, summaries; Claude model names in the settings below map here
+    gemini_model_light: str = "gemini-3.5-flash-lite"  # classification (the Haiku slot)
     model_translate: str = "claude-opus-5-5"
     model_summarize: str = "claude-opus-5-5"
     model_classify: str = "claude-haiku-5-5"
