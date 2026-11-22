@@ -54,15 +54,16 @@ async function step(name, fn) {
     await page.goto(BASE + "/");
     const titles = await page.locator(".entry h2").allInnerTexts();
     assert.ok(titles.length >= 3, `expected 3 items, got ${titles.length}`);
-    fullUrl = await page.getByRole("link", { name: FULL }).getAttribute("href");
-    summaryUrl = await page.getByRole("link", { name: SUMMARY_ONLY }).getAttribute("href");
+    // The lead item can also appear under "most read", so take the first link to each title.
+    fullUrl = await page.getByRole("link", { name: FULL }).first().getAttribute("href");
+    summaryUrl = await page.getByRole("link", { name: SUMMARY_ONLY }).first().getAttribute("href");
   });
 
   await step("full-text item shows numbered paragraphs and the parallel view", async () => {
     await page.goto(BASE + fullUrl);
     assert.equal(await page.locator(".para").count(), 7);
     assert.equal(await page.locator(".para .en").count(), 0);
-    await page.getByLabel("عرض الأصل الإنجليزي بجوار الترجمة").check();
+    await page.getByLabel("مع الأصل الإنجليزي").check();
     assert.equal(await page.locator(".para .en").count(), 7);
   });
 
@@ -205,7 +206,7 @@ async function step(name, fn) {
     await page.goto(BASE + "/search?q=" + encodeURIComponent("الردع الفرنسي"));
     await page.getByRole("link", { name: "الردع الفرنسي في اختبار الحرب عالية الشدة" }).click();
     await page.getByText("(بـالفرنسية)").waitFor();
-    await page.getByLabel("عرض الأصل الفرنسي بجوار الترجمة").check();
+    await page.getByLabel("مع الأصل الفرنسي").check();
     const col = page.locator(".para .en").first();
     assert.equal(await col.getAttribute("lang"), "fr");
     assert.equal(await col.getAttribute("dir"), "ltr");

@@ -7,12 +7,16 @@
     "build": "next build",
     "start": "node .next/standalone/server.js",
     "typecheck": "tsc --noEmit",
+    "test": "node --test lib/*.test.ts",
     "e2e": "node e2e/smoke.cjs",
     "a11y": "node e2e/a11y.cjs"
   },
   "dependencies": {
-    "@fontsource/noto-kufi-arabic": "^5.3.0",
-    "@fontsource/noto-naskh-arabic": "^5.3.0",
+    "@fontsource/amiri": "^5.3.0",
+    "@fontsource/ibm-plex-mono": "^5.3.0",
+    "@fontsource/noto-sans-arabic": "^5.3.0",
+    "@fontsource/scheherazade-new": "^5.3.0",
+    "@fontsource/source-serif-4": "^5.3.1",
     "next": "^15.5.29",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",

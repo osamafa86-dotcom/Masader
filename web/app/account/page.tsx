@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { readerFetch } from "@/lib/reader";
 import { newsletterChoices } from "@/lib/choices";
-import { arDate } from "@/lib/format";
+import { arCount, arDate, NOUNS } from "@/lib/format";
 import { AlertsForm } from "@/components/AccountForms";
 import type { AccountMe, LibraryRow } from "@/lib/types";
 import { deleteAccount, logout, removeSaved, saveNote } from "./actions";
@@ -18,8 +18,9 @@ export default async function Account() {
   return (
     <div className="with-rail">
       <section>
+        <p className="kicker">حسابي</p>
         <h1 className="page-title">مكتبتي</h1>
-        <p className="page-lede">{rows.length ? `${rows.length} مادة محفوظة.` : "لم تحفظ شيئاً بعد. استخدم زر «احفظ في مكتبتي» في صفحة أي مادة."}</p>
+        <p className="page-lede">{rows.length ? `في مكتبتك ${arCount(rows.length, NOUNS.item)}.` : "لم تحفظ شيئاً بعد. استخدم زر «احفظ في مكتبتي» في صفحة أي مادة."}</p>
         <ol className="entries">
           {rows.map((r) => (
             <li key={r.document_id} className="entry" style={{ gridTemplateColumns: "1fr" }}>

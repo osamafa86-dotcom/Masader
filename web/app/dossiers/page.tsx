@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { api } from "@/lib/api";
-import { arDate } from "@/lib/format";
+import { arCount, arDate, NOUNS } from "@/lib/format";
+import { PageHead } from "@/components/PageHead";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "الملفات الموضوعية" };
@@ -8,22 +9,26 @@ export const metadata = { title: "الملفات الموضوعية" };
 export default async function DossiersPage() {
   const rows = await api.dossiers();
   return (
-    <div className="prose" style={{ maxWidth: 860 }}>
-      <h1 className="page-title">الملفات الموضوعية</h1>
-      <p className="page-lede">يجمع المحررون في كل ملف أهم ما رُصد حول قضية واحدة، مع مقدمة تربط بين المواد وملاحظة على كل منها.</p>
-      {rows.length === 0 ? <p className="empty">لا توجد ملفات منشورة بعد.</p> : (
-        <ol className="entries">
+    <>
+      <PageHead kicker="القراءة المركّزة" title="الملفات"
+        lede="يجمع المحرّرون في كل ملف أهم ما رُصد حول سؤال واحد من مصادر مختلفة، بترتيب زمني ومقدّمة تربط بين المواد وملاحظة على كل منها."
+        meta={arCount(rows.length, NOUNS.dossier)} />
+      {rows.length === 0 ? <p className="empty"><strong>لا ملفات منشورة بعد</strong>يُنشر الملف حين يكتمل ويراجع المحرّر مقدّمته.</p> : (
+        <ol className="dossier-cards" style={{ maxWidth: "var(--main)" }}>
           {rows.map((d) => (
-            <li key={d.slug} className="entry" style={{ gridTemplateColumns: "1fr" }}>
+            <li key={d.slug}>
+              <div className="entry-margin">
+                <span className="entry-source">{arCount(d.item_count, NOUNS.item)}</span>
+                {d.updated_at && <span>حُدِّث في {arDate(d.updated_at)}</span>}
+              </div>
               <article>
-                <div className="from">{d.item_count} مواد{d.updated_at && <>، حُدّث في {arDate(d.updated_at)}</>}</div>
                 <h2><Link href={`/dossiers/${d.slug}`}>{d.title_ar}</Link></h2>
-                <p className="dek">{d.excerpt_ar}{d.excerpt_ar.length >= 280 ? "…" : ""}</p>
+                <p>{d.excerpt_ar}{d.excerpt_ar.length >= 280 ? "…" : ""}</p>
               </article>
             </li>
           ))}
         </ol>
       )}
-    </div>
+    </>
   );
 }

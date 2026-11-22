@@ -1,5 +1,6 @@
 export type Tag = { slug: string; name_ar: string };
-export type SourceBrief = { slug: string; name: string; name_ar: string; homepage: string; kind: string };
+export type RightsLevel = "a" | "b" | "c";
+export type SourceBrief = { slug: string; name: string; name_ar: string; homepage: string; kind: string; rights_level?: RightsLevel };
 
 export type ArticleCard = {
   id: number;
@@ -53,7 +54,7 @@ export type Page<T> = { items: T[]; total: number; page: number; per_page: numbe
 export type SourceRow = SourceBrief & {
   description_ar: string;
   is_active: boolean;
-  rights_level: "a" | "b" | "c";
+  rights_level: RightsLevel;
   license: string | null;
   published_count: number;
 };

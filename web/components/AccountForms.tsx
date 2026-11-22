@@ -37,9 +37,9 @@ export function VerifyForm({ token }: { token: string }) {
 export function SaveButton({ docId, initial, signedIn }: { docId: number; initial: boolean; signedIn: boolean }) {
   const [saved, setSaved] = useState(initial);
   const [pending, start] = useTransition();
-  if (!signedIn) return <Link className="btn secondary" href="/account/login">ادخل لحفظ المادة في مكتبتك</Link>;
+  if (!signedIn) return <Link className="btn" href="/account/login" aria-label="احفظ في مكتبتي (يتطلب الدخول إلى حسابك)">احفظ في مكتبتي</Link>;
   return (
-    <button type="button" className="btn secondary saved-btn" aria-pressed={saved} disabled={pending}
+    <button type="button" className="btn saved-btn" aria-pressed={saved} disabled={pending}
             onClick={() => start(async () => {
               const r = await toggleSaved(docId, !saved);
               if (r.signedOut) window.location.href = "/account/login";

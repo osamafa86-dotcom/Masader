@@ -162,7 +162,7 @@ cd engine && .venv/bin/pytest -q
 ```
 
 ```bash
-cd web && npm run typecheck && npm run build
+cd web && npm run typecheck && npm test && npm run build
 ```
 
 اختبار المتصفح الشامل، على موقع يعمل ومحمّل ببيانات العرض:
