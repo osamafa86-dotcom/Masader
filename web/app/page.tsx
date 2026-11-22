@@ -67,7 +67,10 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
     api.dossiers().catch(() => []), api.trendMonths().catch(() => []),
   ]);
   const trend = months.length ? await api.trend(months[0].month).catch(() => null) : null;
-  const active = sources.filter((s) => s.published_count > 0).sort((a, b) => b.published_count - a.published_count);
+  // Monitored = being watched now, or already published from; the busiest first.
+  const active = sources.filter((s) => s.is_active || s.published_count > 0).sort((a, b) => b.published_count - a.published_count);
+  const liveTopics = topics.topic.filter((t) => t.count > 0);
+  const liveRegions = topics.region.filter((t) => t.count > 0);
   const first = page === 1 && articles.items.length > 0;
   const lead = first ? articles.items[0] : null;
   const rest = first ? articles.items.slice(1) : articles.items;
@@ -114,20 +117,24 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
           <h2 id="latest">{page === 1 ? "آخر ما رُصد" : `آخر ما رُصد، صفحة ${page}`}</h2>
           <span className="more muted">{arCount(articles.total, NOUNS.item)}</span>
         </div>
-        <ArticleList items={rest} />
+        <ArticleList items={rest} empty={articles.total === 0
+          ? <><strong>لم تُنشر مواد بعد</strong>نرصد الآن {arCount(active.length, NOUNS.source)}، وتظهر المواد هنا بعد ترجمتها ومراجعتها. <Link href="/sources">المصادر قيد الرصد</Link> · <Link href="/subscribe">اشترك ليصلك أوّلها</Link></>
+          : undefined} />
         <Pager page={page} total={articles.total} perPage={articles.per_page} base="/" />
       </section>
 
       {page === 1 && (
         <div className="index-grid">
-          <section aria-labelledby="ix-topics">
-            <h2 id="ix-topics" className="kicker block-head">الموضوعات</h2>
-            <ul className="index-list">
-              {topics.topic.filter((t) => t.count > 0).map((t) => (
-                <li key={t.slug}><Link href={`/topics/${t.slug}`}>{t.name_ar}</Link><span className="count">{t.count}</span></li>
-              ))}
-            </ul>
-          </section>
+          {liveTopics.length > 0 ? (
+            <section aria-labelledby="ix-topics">
+              <h2 id="ix-topics" className="kicker block-head">الموضوعات</h2>
+              <ul className="index-list">
+                {liveTopics.map((t) => (
+                  <li key={t.slug}><Link href={`/topics/${t.slug}`}>{t.name_ar}</Link><span className="count">{t.count}</span></li>
+                ))}
+              </ul>
+            </section>
+          ) : <div />}
           <section aria-labelledby="ix-sources">
             <h2 id="ix-sources" className="kicker block-head">المصادر المرصودة</h2>
             <ul className="index-list">
@@ -142,14 +149,16 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
             <p className="legend">أ = ترخيص مفتوح · ب = ترجمة كاملة بإذن · ج = ملخص ورابط فقط. <Link href="/sources">كل المصادر</Link></p>
           </section>
           <div>
-            <section aria-labelledby="ix-regions">
-              <h2 id="ix-regions" className="kicker block-head">المناطق</h2>
-              <ul className="index-list">
-                {topics.region.filter((t) => t.count > 0).map((t) => (
-                  <li key={t.slug}><Link href={`/regions/${t.slug}`}>{t.name_ar}</Link><span className="count">{t.count}</span></li>
-                ))}
-              </ul>
-            </section>
+            {liveRegions.length > 0 && (
+              <section aria-labelledby="ix-regions">
+                <h2 id="ix-regions" className="kicker block-head">المناطق</h2>
+                <ul className="index-list">
+                  {liveRegions.map((t) => (
+                    <li key={t.slug}><Link href={`/regions/${t.slug}`}>{t.name_ar}</Link><span className="count">{t.count}</span></li>
+                  ))}
+                </ul>
+              </section>
+            )}
             {dossiers.length > 0 && (
               <section aria-labelledby="ix-dossiers" style={{ marginTop: "var(--space-8)" }}>
                 <h2 id="ix-dossiers" className="kicker block-head">الملفات</h2>

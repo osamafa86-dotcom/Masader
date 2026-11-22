@@ -775,3 +775,6 @@ main:has(> .news-band:last-child) + .footer .wrap { border-top: 0; padding-top: 
   .glossary-table td:nth-child(4) { grid-column: 2; grid-row: 1; text-align: left; }
   .glossary-table td.nil { display: none; }
 }
+
+/* an empty list right under a section rule must not draw a second rule */
+.sec-head + .empty { border-top: 0; padding-top: var(--space-5); }
