@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ApiError, api } from "@/lib/api";
-import { arDate } from "@/lib/format";
+import { arCount, arDate, NOUNS } from "@/lib/format";
 import { Ar } from "@/components/Ar";
-import { Badges } from "@/components/ArticleList";
-import Link from "next/link";
+import { ArticleList } from "@/components/ArticleList";
+import { PageHead } from "@/components/PageHead";
 
 export const revalidate = 60;
 
@@ -24,30 +24,22 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function DossierPage({ params }: { params: Promise<{ slug: string }> }) {
   const d = await load((await params).slug);
+  const notes = Object.fromEntries(d.items.filter((a) => a.note_ar).map((a) => [a.id, a.note_ar]));
   return (
-    <article>
-      <header className="article-head">
-        <div className="ui"><Link href="/dossiers">الملفات الموضوعية</Link></div>
-        <h1>{d.title_ar}</h1>
-        <div className="byline"><span>{d.item_count} مواد</span>{d.updated_at && <span>آخر تحديث {arDate(d.updated_at)}</span>}</div>
-      </header>
-      <section className="narrative">
+    <>
+      <PageHead
+        crumbs={[{ href: "/dossiers", label: "الملفات" }, { label: d.title_ar }]}
+        kicker="ملف"
+        title={d.title_ar}
+        meta={<>{arCount(d.item_count, NOUNS.item)}{d.updated_at && <><span className="sep" aria-hidden="true">·</span>آخر تحديث {arDate(d.updated_at)}</>}</>}
+      />
+      <section className="narrative" aria-label="مقدّمة المحرّر">
         {d.intro_ar.split(/\n{2,}/).map((p, i) => <p key={i}><Ar text={p} /></p>)}
       </section>
-      <ol className="entries" style={{ maxWidth: 860 }}>
-        {d.items.map((a, i) => (
-          <li key={a.id} className="entry">
-            <span className="num ui muted" style={{ paddingTop: "0.3rem" }}>[{i + 1}]</span>
-            <article>
-              <div className="from">{a.source.name_ar}{a.original_published_at && <>، {arDate(a.original_published_at)}</>}</div>
-              <h2><Link href={`/articles/${a.id}`}>{a.title_ar}</Link></h2>
-              {a.dek_ar && <p className="dek"><Ar text={a.dek_ar} /></p>}
-              {a.note_ar && <p className="notice" style={{ margin: "0.5rem 0" }}>ملاحظة المحرر: {a.note_ar}</p>}
-              <Badges a={a} />
-            </article>
-          </li>
-        ))}
-      </ol>
-    </article>
+      <div style={{ maxWidth: "var(--main)" }}>
+        <div className="sec-head first"><h2>مواد الملف</h2><span className="more muted">بترتيب المحرّر</span></div>
+        <ArticleList items={d.items} notes={notes} />
+      </div>
+    </>
   );
 }

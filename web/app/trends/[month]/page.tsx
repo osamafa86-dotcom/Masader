@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { ApiError, api } from "@/lib/api";
 import { arMonth } from "@/lib/format";
 import { TrendBody } from "@/components/TrendBody";
+import { PageHead } from "@/components/PageHead";
 
 export const revalidate = 300;
 
@@ -19,21 +20,23 @@ export default async function TrendMonth({ params }: { params: Promise<{ month: 
     api.trendMonths(),
   ]);
   return (
-    <div>
-      <h1 className="page-title">اتجاهات {arMonth(month)}</h1>
-      <nav className="issues" aria-label="الأشهر" style={{ margin: "0.75rem 0 1.5rem" }}>
-        {months.slice(0, 12).map((m) => (
-          <Link key={m.month} href={`/trends/${m.month}`} aria-current={m.month === month ? "page" : undefined}>{arMonth(m.month)}</Link>
-        ))}
-      </nav>
+    <>
+      <PageHead kicker="الاتجاهات الشهرية" title={arMonth(month)}
+        lede="ما الذي شغل مراكز الفكر والمجلات المحكّمة في هذا الشهر: الأرقام، وقراءة المحرّر حين تُنشر." />
+      {months.length > 1 && (
+        <nav className="month-nav" aria-label="الأشهر">
+          {months.slice(0, 12).map((m) => (
+            <Link key={m.month} href={`/trends/${m.month}`} aria-current={m.month === month ? "page" : undefined}>{arMonth(m.month)}</Link>
+          ))}
+        </nav>
+      )}
       {stats.report && (
         <section className="narrative" aria-labelledby="reading">
-          <h2 id="reading" style={{ fontSize: "var(--s1)" }}>قراءة المحرر</h2>
+          <h2 id="reading" className="kicker" style={{ marginBottom: "var(--space-2)" }}>قراءة المحرّر</h2>
           {stats.report.narrative_ar.split(/\n{2,}/).map((p, i) => <p key={i}>{p}</p>)}
         </section>
       )}
       <TrendBody stats={stats} />
-    </div>
+    </>
   );
 }
-

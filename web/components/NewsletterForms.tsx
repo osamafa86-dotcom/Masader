@@ -42,18 +42,18 @@ function Preferences({ choices, current }: { choices: Choices; current?: Subscri
   );
 }
 
-export function SubscribeForm({ choices }: { choices: Choices }) {
+export function SubscribeForm({ choices, email }: { choices: Choices; email?: string }) {
   const [state, action, pending] = useActionState<NlState, FormData>(subscribeAction, null);
   if (state?.ok) return <Note state={state} />;
   return (
     <form action={action}>
       <div className="field">
         <label htmlFor="email">بريدك الإلكتروني</label>
-        <input id="email" name="email" type="email" required dir="ltr" autoComplete="email" />
+        <input id="email" name="email" type="email" required dir="ltr" autoComplete="email" defaultValue={email} />
       </div>
-      <details style={{ marginBottom: "1rem" }}>
+      <details style={{ marginBottom: "var(--space-4)" }}>
         <summary className="ui">خصّص النشرة (اختياري)</summary>
-        <div style={{ marginTop: "1rem" }}><Preferences choices={choices} /></div>
+        <div style={{ marginTop: "var(--space-4)" }}><Preferences choices={choices} /></div>
       </details>
       <Note state={state} />
       <p className="ui muted">نستخدم بريدك لإرسال النشرة فقط. <Link href="/privacy">سياسة الخصوصية</Link></p>

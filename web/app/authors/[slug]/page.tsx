@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ApiError, api } from "@/lib/api";
+import { arNumber } from "@/lib/format";
 import { ArticleList, Pager } from "@/components/ArticleList";
+import { PageHead } from "@/components/PageHead";
 
 export const revalidate = 60;
 
@@ -25,12 +27,16 @@ export default async function AuthorPage({ params, searchParams }: { params: Pro
   const a = await load(slug, page);
   return (
     <>
-      <h1 className="page-title"><bdi dir="ltr" lang="en">{a.name}</bdi></h1>
-      <p className="page-lede">
-        {a.total} مادة رصدناها لهذا الكاتب{a.sources.length > 0 && <>، منشورة لدى {a.sources.join("، ")}</>}.
-      </p>
-      <ArticleList items={a.items} />
-      <Pager page={page} total={a.total} perPage={a.per_page} base={`/authors/${slug}`} />
+      <PageHead
+        kicker="المؤلفون"
+        title={<bdi className="latin" dir="ltr" lang="en" style={{ fontWeight: 400 }}>{a.name}</bdi>}
+        lede={[a.name_ar, a.affiliation].filter(Boolean).join("، ") || undefined}
+        meta={<>المواد المرصودة: {arNumber(a.total)}{a.sources.length > 0 && <><span className="sep" aria-hidden="true">·</span>لدى {a.sources.join("، ")}</>}</>}
+      />
+      <div style={{ maxWidth: "var(--main)" }}>
+        <ArticleList items={a.items} />
+        <Pager page={page} total={a.total} perPage={a.per_page} base={`/authors/${slug}`} />
+      </div>
     </>
   );
 }

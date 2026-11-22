@@ -39,7 +39,8 @@ def article_card(doc: Document) -> dict:
         "title_ar": tr.title_ar,
         "title_en": doc.title_en,
         "dek_ar": (tr.summary or {}).get("dek_ar", ""),
-        "source": source_brief(doc.source),
+        # The rights level lets the site label each item أ/ب/ج as the methodology defines them.
+        "source": {**source_brief(doc.source), "rights_level": doc.source.rights_level.value},
         "authors": doc.authors or [],
         "authors_detail": [{"name": link.author.name, "slug": link.author.slug} for link in doc.author_links],
         "original_published_at": doc.published_at.isoformat() if doc.published_at else None,

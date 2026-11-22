@@ -1,7 +1,8 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ApiError, api } from "@/lib/api";
+import { arCount, NOUNS } from "@/lib/format";
 import { ArticleList } from "@/components/ArticleList";
+import { PageHead } from "@/components/PageHead";
 
 export const revalidate = 60;
 
@@ -18,12 +19,14 @@ export default async function IssuePage({ params }: { params: Promise<{ slug: st
   if (!src) notFound();
   return (
     <>
-      <div className="ui"><Link href={`/sources/${slug}`}>{src.name_ar}</Link></div>
-      <h1 className="page-title">المجلد {volume}، العدد {issue}</h1>
-      <p className="page-lede">
-        فهرس العدد مترجماً، مرتباً بحسب الصفحات. لكل دراسة ملخص عربي مبني على ملخصها المنشور، ورابط إلى نصها لدى الناشر.
-      </p>
-      <ArticleList items={toc.items} />
+      <PageHead
+        crumbs={[{ href: "/sources", label: "المصادر" }, { href: `/sources/${slug}`, label: <bdi>{src.name_ar}</bdi> }, { label: `المجلد ${volume}، العدد ${issue}` }]}
+        kicker="فهرس العدد"
+        title={`المجلد ${volume}، العدد ${issue}`}
+        lede="فهرس العدد مترجماً، مرتباً بحسب الصفحات. لكل دراسة ملخص عربي مبني على ملخصها المنشور، ورابط إلى نصها لدى الناشر."
+        meta={arCount(toc.items.length, NOUNS.item)}
+      />
+      <div style={{ maxWidth: "var(--main)" }}><ArticleList items={toc.items} /></div>
     </>
   );
 }

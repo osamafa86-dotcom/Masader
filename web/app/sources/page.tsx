@@ -1,49 +1,59 @@
 import Link from "next/link";
 import { api } from "@/lib/api";
 import type { SourceRow } from "@/lib/types";
+import { arCount, NOUNS } from "@/lib/format";
+import { PageHead } from "@/components/PageHead";
+import { KIND, RIGHTS } from "@/lib/labels";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "المصادر" };
 
-const RIGHTS: Record<SourceRow["rights_level"], string> = {
-  a: "ترخيص مفتوح أو ملك عام: نترجم النص كاملاً",
-  b: "بإذن من المصدر: نترجم النص كاملاً",
-  c: "حقوق محفوظة: ننشر ملخصاً تحليلياً مع رابط الأصل",
-};
-
-function Row({ s }: { s: SourceRow }) {
+function Table({ rows, caption }: { rows: SourceRow[]; caption: string }) {
   return (
-    <li className="entry" style={{ gridTemplateColumns: "1fr" }}>
-      <article>
-        <h2><Link href={`/sources/${s.slug}`}>{s.name_ar}</Link></h2>
-        <p className="from"><bdi className="latin">{s.name}</bdi></p>
-        {s.description_ar && <p className="dek">{s.description_ar}</p>}
-        <div className="badges">
-          <span className={`badge${s.rights_level !== "c" ? " full" : ""}`}>{RIGHTS[s.rights_level]}</span>
-          {s.license && <span className="badge"><bdi>{s.license}</bdi></span>}
-          {s.is_active && <span className="badge">{s.published_count} مادة منشورة</span>}
-        </div>
-      </article>
-    </li>
+    <table className="table stack">
+      <caption className="sr-only">{caption}</caption>
+      <thead><tr><th scope="col">المصدر</th><th scope="col">النوع</th><th scope="col">الحقوق</th><th scope="col" className="n">المواد</th></tr></thead>
+      <tbody>
+        {rows.map((s) => (
+          <tr key={s.slug}>
+            <td className="wide">
+              <Link className="title" href={`/sources/${s.slug}`}><bdi>{s.name_ar}</bdi></Link>
+              <div><bdi className="latin" lang="en">{s.name}</bdi></div>
+            </td>
+            <td>{KIND[s.kind] ?? s.kind}</td>
+            <td><span className="rights-letter" aria-hidden="true">{RIGHTS[s.rights_level].letter}</span> {RIGHTS[s.rights_level].short}{s.license && <> · <bdi>{s.license}</bdi></>}</td>
+            <td className="n">{s.published_count}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 }
 
 export default async function SourcesPage() {
   const sources = (await api.sources()).filter((s) => !s.slug.startsWith("demo-") || s.published_count > 0);
-  const active = sources.filter((s) => s.is_active || s.published_count > 0);
+  const active = sources.filter((s) => s.is_active || s.published_count > 0).sort((a, b) => b.published_count - a.published_count);
   const pending = sources.filter((s) => !s.is_active && s.published_count === 0);
   return (
-    <div className="prose" style={{ maxWidth: 860 }}>
-      <h1 className="page-title">المصادر</h1>
-      <p className="page-lede">
-        نحدد لكل مصدر ما يجوز نشره بحسب ترخيصه أو الإذن الممنوح لنا، ونعرض ذلك هنا بوضوح.
-        التفاصيل في <Link href="/methodology">صفحة المنهجية</Link>.
-      </p>
-      <h2>قيد الرصد</h2>
-      <ol className="entries">{active.map((s) => <Row key={s.slug} s={s} />)}</ol>
-      <h2>قيد الإعداد</h2>
-      <p className="muted">مصادر سننضم إليها بعد تثبيت طريقة الرصد وسياسة الحقوق، ومنها المجلات المحكّمة المدفوعة.</p>
-      <ol className="entries">{pending.map((s) => <Row key={s.slug} s={s} />)}</ol>
-    </div>
+    <>
+      <PageHead kicker="الشفافية" title="المصادر قيد الرصد"
+        lede={<>نرصد {arCount(active.length, NOUNS.source)} من مراكز الفكر والمجلات المحكّمة. حقوق كل مصدر تحدّد ما نقدّمه منه، ونذكرها على كل مادة. التفصيل في <Link href="/methodology">صفحة المنهجية</Link>.</>} />
+      <dl className="rights-legend">
+        {(["a", "b", "c"] as const).map((k) => (
+          <div key={k}>
+            <dt>
+              <span className="rights-letter" aria-hidden="true">{RIGHTS[k].letter}</span>{RIGHTS[k].short}
+            </dt>
+            <dd>{RIGHTS[k].long}</dd>
+          </div>
+        ))}
+      </dl>
+      <Table rows={active} caption="المصادر قيد الرصد" />
+      {pending.length > 0 && <>
+        <div className="sec-head"><h2>قيد الإعداد</h2><span className="more muted">{arCount(pending.length, NOUNS.source)}</span></div>
+        <p className="page-lede">مصادر سننضم إليها بعد تثبيت طريقة الرصد وسياسة الحقوق، ومنها المجلات المحكّمة المدفوعة.</p>
+        <Table rows={pending} caption="مصادر قيد الإعداد" />
+      </>}
+    </>
   );
 }

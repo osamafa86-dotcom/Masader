@@ -1,24 +1,27 @@
 "use client";
 import { useActionState, useState } from "react";
 import { sendFeedback, type FeedbackState } from "@/app/actions";
+import { arCount, NOUNS } from "@/lib/format";
 import { Ar } from "./Ar";
 
 type Para = { en: string; ar: string };
 
 const LANG_NAMES: Record<string, string> = { en: "الإنجليزي", fr: "الفرنسي", ru: "الروسي", he: "العبري", zh: "الصيني", de: "الألماني", es: "الإسباني" };
 
-export function Body({ docId, body, lang = "en" }: { docId: number; body: Para[]; lang?: string }) {
+/** The translated text, paragraph by paragraph, with a text switch to set the original beside it. */
+export function Body({ docId, body, lang = "en", note }: { docId: number; body: Para[]; lang?: string; note?: string }) {
   const dir = lang === "he" || lang === "ar" ? "rtl" : "ltr";
   const [parallel, setParallel] = useState(false);
   const [reporting, setReporting] = useState<number | null>(null);
   return (
-    <section aria-labelledby="body-title">
-      <div className="body-head">
-        <h2 id="body-title">النص الكامل مترجماً</h2>
-        <label className="toggle">
-          <input type="checkbox" checked={parallel} onChange={(e) => setParallel(e.target.checked)} />
-          عرض الأصل {LANG_NAMES[lang] ?? ""} بجوار الترجمة
-        </label>
+    <>
+      <div className="switcher">
+        <fieldset className="switch">
+          <legend className="sr-only">طريقة عرض النص</legend>
+          <label><input type="radio" name="body-view" checked={!parallel} onChange={() => setParallel(false)} />بالعربية وحدها</label>
+          <label><input type="radio" name="body-view" checked={parallel} onChange={() => setParallel(true)} />مع الأصل {LANG_NAMES[lang] ?? ""}</label>
+        </fieldset>
+        <span className="switch-meta">{note && <>{note}<span className="sep" aria-hidden="true">·</span></>}{arCount(body.length, NOUNS.paragraph)}</span>
       </div>
       {body.map((p, i) => (
         <div key={i} id={`p${i + 1}`} className={`para${parallel ? " parallel" : ""}`}>
@@ -34,7 +37,8 @@ export function Body({ docId, body, lang = "en" }: { docId: number; body: Para[]
           {parallel && <div className="en" lang={lang} dir={dir}><p>{p.en}</p></div>}
         </div>
       ))}
-    </section>
+      <p className="body-foot">الفقرات مرقّمة كما في الأصل، وتحت كل فقرة رابط للإبلاغ عن خطأ يصل إلى المحرّر مباشرة.</p>
+    </>
   );
 }
 

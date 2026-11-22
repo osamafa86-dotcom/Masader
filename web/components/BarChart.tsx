@@ -27,7 +27,7 @@ export function BarChart({ title, bars, max, unit = "مادة", previousLabel = 
       </ul>
       <details className="chart-table">
         <summary className="ui">عرض الأرقام جدولاً</summary>
-        <table className="glossary-table">
+        <table>
           <thead><tr><th scope="col">البند</th><th scope="col">العدد</th>{bars.some((b) => b.previous !== undefined) && <th scope="col">{previousLabel}</th>}</tr></thead>
           <tbody>{bars.map((b) => <tr key={b.key}><td>{b.label}</td><td>{b.value}</td>{b.previous !== undefined && <td>{b.previous}</td>}</tr>)}</tbody>
         </table>

@@ -74,6 +74,8 @@ def test_review_edit_publish_flow(api, db):
     assert {"en": "gray zone", "ar": "المنطقة الرمادية", "definition_ar": ""} in public["glossary"]
     listing = api.get("/api/articles", params={"topic": "deterrence"}).json()
     assert [a["id"] for a in listing["items"]] == [doc.id]
+    # The card carries the source's rights level, so the list badge can say "أ" vs "ب" truthfully.
+    assert listing["items"][0]["source"]["rights_level"] == "a"
     assert api.get("/api/articles", params={"topic": "cyber"}).json()["total"] == 0
 
     actions = db.scalars(select(AuditLog.action).where(AuditLog.entity_id == doc.id)).all()
@@ -94,6 +96,7 @@ def test_summary_only_source_never_exposes_body(api, db):
     api.post(f"/api/editor/items/{doc.id}/publish", headers=h)
     public = api.get(f"/api/articles/{doc.id}").json()
     assert public["publish_level"] == "summary"
+    assert public["source"]["rights_level"] == "c"
     assert public["body"] is None and public["license"] is None
     assert public["summary"]["thesis_ar"]
     assert "ملخص تحليلي" in public["rights_note"]
