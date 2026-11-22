@@ -1,10 +1,16 @@
-"""Model access. AnthropicLLM calls the Claude API; FakeLLM serves tests and keyless demos."""
+"""Model access. AnthropicLLM calls the Claude API, GeminiLLM the Gemini API; FakeLLM serves tests and keyless demos."""
 
 import json
 import logging
+import os
+import re
+import time
 from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import date, datetime, timezone
 from typing import Protocol
+
+import httpx
 
 log = logging.getLogger(__name__)
 
@@ -15,6 +21,19 @@ PRICES = {
     "claude-haiku-5-5": (0.10, 0.50, 0.01),
     "claude-opus-4-8": (5.00, 25.00, 0.50),
     "claude-sonnet-5": (2.00, 10.00, 0.20),
+    # Gemini, paid tier, prompts up to 200k tokens; thinking tokens are billed as output.
+    "gemini-3.8-flash": (0.75, 3.75, 0.075),
+    "gemini-3.6-flash": (0.75, 3.75, 0.075),
+    "gemini-3.5-flash-lite": (0.30, 2.50, 0.03),
+    "gemini-3.1-flash-lite": (0.25, 1.50, 0.025),
+    "gemini-3.1-pro-preview": (2.00, 12.00, 0.20),
+    "gemini-4-hydrogen": (1.50, 7.50, 0.15),
+    "gemini-4-carbon": (4.00, 20.00, 0.40),
+    "gemini-4-argon": (4.00, 20.00, 0.40),
+}
+# Announced price changes: (first day, new prices). Without this the daily budget would undercount real spend.
+PRICE_CHANGES = {
+    "gemini-3.8-flash": (date(2027, 1, 1), (1.50, 7.50, 0.15)),
 }
 FALLBACK_MODELS = {"claude-opus-5-5", "claude-sonnet-5-5", "claude-opus-5", "claude-fable-5-2", "claude-fable-5-1"}
 FALLBACK_BETA = "server-side-fallback-2026-07-01"
@@ -37,8 +56,17 @@ class LLMResult:
     cost_usd: float = 0.0
 
 
-def estimate_cost(model: str, input_tokens: int, output_tokens: int, cache_write: int = 0, cache_read: int = 0) -> float:
-    p_in, p_out, p_cache = PRICES.get(model, PRICES["claude-opus-5-5"])
+def estimate_cost(model: str, input_tokens: int, output_tokens: int, cache_write: int = 0, cache_read: int = 0,
+                  on: date | None = None) -> float:
+    if not model.startswith("gemini"):
+        prices = PRICES.get(model, PRICES["claude-opus-5-5"])
+    else:
+        name = model if model in PRICES else "gemini-3.8-flash"
+        prices = PRICES[name]
+        change = PRICE_CHANGES.get(name)
+        if change and (on or datetime.now(timezone.utc).date()) >= change[0]:
+            prices = change[1]
+    p_in, p_out, p_cache = prices
     return (input_tokens * p_in + cache_write * p_in * 1.25 + cache_read * p_cache + output_tokens * p_out) / 1_000_000
 
 
@@ -174,6 +202,113 @@ class AnthropicLLM(_AnthropicBatches):
         log.info("%s on %s: in=%s out=%s cost=$%.4f", task, served, u.input_tokens, u.output_tokens, cost)
         return LLMResult(data=data, model=served, input_tokens=u.input_tokens, output_tokens=u.output_tokens,
                          cost_usd=cost)
+
+
+GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+GEMINI_BLOCKED = {"SAFETY", "PROHIBITED_CONTENT", "RECITATION", "BLOCKLIST", "SPII", "LANGUAGE"}
+GEMINI_RETRY = {429, 500, 502, 503, 504}
+_FENCE = re.compile(r"^\s*```(?:json)?\s*(.*?)\s*```\s*$", re.S)
+
+
+class GeminiLLM:
+    """The Gemini API through REST generateContent, with JSON output bound to the task's schema.
+
+    The pipeline names Claude models in its settings; those names map to `model` (translation, summaries,
+    judging) or `model_light` (classification, the Haiku slot). A setting that already names a Gemini model is
+    used as given. There is no Batch API here, so the worker translates synchronously."""
+
+    def __init__(self, api_key: str | None = None, model: str = "gemini-3.8-flash",
+                 model_light: str = "gemini-3.5-flash-lite", transport: httpx.BaseTransport | None = None,
+                 timeout_s: float = 600.0, retries: int = 3, retry_wait_s: float = 2.0):
+        self.api_key = api_key if api_key is not None else (os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY") or "")
+        self.model, self.model_light = model, model_light
+        self.retries, self.retry_wait_s = retries, retry_wait_s
+        self._http = httpx.Client(transport=transport, timeout=timeout_s)
+        self._plain_models: set[str] = set()  # models that rejected the schema field or thinking level once
+
+    def resolve(self, model: str) -> str:
+        if model.startswith("gemini"):
+            return model
+        return self.model_light if "haiku" in model else self.model
+
+    def _body(self, system: str, user: str, schema: dict, max_tokens: int, effort: str | None, plain: bool) -> dict:
+        config: dict = {"responseMimeType": "application/json", "maxOutputTokens": max_tokens}
+        if plain:
+            # Fallback when the API rejects the schema field or thinking level: state the schema in the instruction.
+            system = f"{system}\n\nReply with JSON only, valid against this JSON Schema:\n{json.dumps(schema, ensure_ascii=False)}"
+        else:
+            config["responseJsonSchema"] = schema
+            if effort:
+                config["thinkingConfig"] = {"thinkingLevel": effort.upper()}
+        return {"systemInstruction": {"parts": [{"text": system}]},
+                "contents": [{"role": "user", "parts": [{"text": user}]}],
+                "generationConfig": config}
+
+    def _post(self, task: str, model: str, body: dict) -> httpx.Response:
+        last = ""
+        for attempt in range(self.retries):
+            try:
+                res = self._http.post(GEMINI_URL.format(model=model), json=body,
+                                      headers={"x-goog-api-key": self.api_key, "content-type": "application/json"})
+            except httpx.HTTPError as exc:
+                last = f"connection error: {exc}"
+            else:
+                if res.status_code not in GEMINI_RETRY:
+                    return res
+                last = f"API {res.status_code}: {_gemini_message(res)}"
+            if attempt + 1 < self.retries:
+                time.sleep(self.retry_wait_s * (2 ** attempt))
+        raise LLMError(f"{task}: {last}")
+
+    def json(self, *, task, model, system, user, schema, max_tokens=16000, effort=None) -> LLMResult:
+        if not self.api_key:
+            raise LLMError(f"{task}: no Gemini API key (set MARSAD_GEMINI_API_KEY)")
+        model = self.resolve(model)
+        plain = model in self._plain_models
+        res = self._post(task, model, self._body(system, user, schema, max_tokens, effort, plain=plain))
+        if res.status_code == 400 and not plain:
+            log.warning("%s on %s: 400 %s; retrying without schema field and thinking level", task, model, _gemini_message(res))
+            res = self._post(task, model, self._body(system, user, schema, max_tokens, effort, plain=True))
+            if res.status_code == 200:
+                self._plain_models.add(model)
+        if res.status_code != 200:
+            raise LLMError(f"{task}: API {res.status_code}: {_gemini_message(res)}")
+        out = res.json()
+
+        block = (out.get("promptFeedback") or {}).get("blockReason")
+        if block:
+            raise LLMRefusal(f"{task}: prompt blocked ({block})")
+        candidates = out.get("candidates") or []
+        if not candidates:
+            raise LLMError(f"{task}: no candidates in response")
+        cand = candidates[0]
+        finish = cand.get("finishReason", "")
+        if finish in GEMINI_BLOCKED:
+            raise LLMRefusal(f"{task}: model declined (finishReason={finish})")
+        if finish == "MAX_TOKENS":
+            raise LLMError(f"{task}: output truncated at max_tokens={max_tokens}")
+        text = "".join(p.get("text", "") for p in (cand.get("content") or {}).get("parts", []) if not p.get("thought"))
+        fenced = _FENCE.match(text)
+        try:
+            data = json.loads(fenced.group(1) if fenced else text)
+        except json.JSONDecodeError as exc:
+            raise LLMError(f"{task}: invalid JSON: {exc}") from exc
+
+        u = out.get("usageMetadata") or {}
+        served = out.get("modelVersion") or model
+        tokens_in = u.get("promptTokenCount", 0)
+        tokens_out = u.get("candidatesTokenCount", 0) + u.get("thoughtsTokenCount", 0)
+        cached = u.get("cachedContentTokenCount", 0)
+        cost = estimate_cost(served, tokens_in - cached, tokens_out, cache_read=cached)
+        log.info("%s on %s: in=%s out=%s cost=$%.4f", task, served, tokens_in, tokens_out, cost)
+        return LLMResult(data=data, model=served, input_tokens=tokens_in, output_tokens=tokens_out, cost_usd=cost)
+
+
+def _gemini_message(res: httpx.Response) -> str:
+    try:
+        return str(res.json().get("error", {}).get("message", ""))[:300]
+    except ValueError:
+        return res.text[:300]
 
 
 class FakeLLM:

@@ -54,7 +54,7 @@ if [ ! -f .env ]; then
       -e "s|^MARSAD_SECRET_KEY=.*|MARSAD_SECRET_KEY=$(rnd 64)|" \
       .env.example > .env
   chmod 600 .env
-  echo "created .env with fresh secrets. Add ANTHROPIC_API_KEY (and optionally Voyage/SMTP) to $SITE_DIR/.env, then run this script again."
+  echo "created .env with fresh secrets. Add a model key (ANTHROPIC_API_KEY, or MARSAD_LLM_BACKEND=gemini with MARSAD_GEMINI_API_KEY; optionally Voyage/SMTP) to $SITE_DIR/.env, then run this script again."
 else
   echo "keeping the existing .env"
 fi

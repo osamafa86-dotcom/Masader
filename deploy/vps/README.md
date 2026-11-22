@@ -21,7 +21,7 @@
    ```sh
    curl -fsSL https://raw.githubusercontent.com/osamafa86-dotcom/masader/main/deploy/vps/install.sh | sh
    ```
-3. أضف `ANTHROPIC_API_KEY` (واختيارياً Voyage وSMTP) إلى `/opt/sites/masader/.env`، ثم أعد الأمر في الخطوة 2.
+3. أضف مفتاح النموذج — `ANTHROPIC_API_KEY`، أو `MARSAD_LLM_BACKEND=gemini` مع `MARSAD_GEMINI_API_KEY` — (واختيارياً Voyage وSMTP) إلى `/opt/sites/masader/.env`، ثم أعد الأمر في الخطوة 2.
 4. حساب المحرر الأول (يسأل عن كلمة المرور):
    ```sh
    cd /opt/sites/masader
